@@ -1,0 +1,56 @@
+[
+  {
+    "id": "C1",
+    "tema": "transparencia ley80 + memoria",
+    "turnos": [
+      {
+        "pregunta": "¿Qué dice el artículo 24 de la Ley 80 de 1993 sobre transparencia?",
+        "target": { "numero": "80/1993", "articulo": "24" }
+      },
+      {
+        "pregunta": "¿Ese artículo menciona la selección objetiva? Responde sí o no y cita la fuente.",
+        "target": { "numero": "80/1993", "articulo": "24" }
+      },
+      {
+        "pregunta": "¿Cuál era el número de la ley de mi primera pregunta?",
+        "memoria": "80"
+      }
+    ]
+  },
+  {
+    "id": "C2",
+    "tema": "constitución + cambio de artículo",
+    "turnos": [
+      {
+        "pregunta": "¿Qué dice el artículo 11 de la Constitución sobre el derecho a la vida?",
+        "target": { "numero": "CP/1991", "articulo": "11" }
+      },
+      {
+        "pregunta": "¿Y el artículo 23 sobre derecho de petición?",
+        "target": { "numero": "CP/1991", "articulo": "23" }
+      },
+      {
+        "pregunta": "¿De qué norma hemos estado hablando en esta conversación?",
+        "memoria": "constitu"
+      }
+    ]
+  },
+  {
+    "id": "C3",
+    "tema": "abstención honesta + correferencia",
+    "turnos": [
+      {
+        "pregunta": "¿Cuál es la pena por homicidio en Colombia?",
+        "abstencion": true
+      },
+      {
+        "pregunta": "¿Qué dice el artículo 5 de la Ley 1150 de 2007 sobre selección objetiva?",
+        "target": { "numero": "1150/2007", "articulo": "5" }
+      },
+      {
+        "pregunta": "¿Y qué modalidades trae el artículo 2 de esa misma ley?",
+        "target": { "numero": "1150/2007", "articulo": "2" }
+      }
+    ]
+  }
+]

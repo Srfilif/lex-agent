@@ -1,0 +1,40 @@
+# Secrets — nunca commitear
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
+*.log
+
+# Data / modelos locales
+data/
+*.sqlite
+*.db
+*.dump
+
+# Backups de BD (contienen datos de usuarios) + eval/E2E desechables
+backups/
+eval/resultados-*.json
+eval/resultados-conv-*.json
+tests/e2e/shots/
+tests/e2e/npm-cache/
+.npm-tmp/
+
+# Cobertura y reportes
+coverage/
+playwright-report/
+test-results/
+
+# OS / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

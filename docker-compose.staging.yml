@@ -1,0 +1,16 @@
+# Override staging: prod-like sin secretos reales.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.staging.yml up --build -d
+# Exige secretos vía entorno (falla rápido si faltan); CORS cerrado a staging.
+services:
+  api:
+    environment:
+      NODE_ENV: production
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?staging exige AUTH_JWT_SECRET}
+      AUTH_SECURE_COOKIES: 'true'
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?staging exige TOTP_ENCRYPTION_KEY}
+      BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:?staging exige BILLING_WEBHOOK_SECRET}
+      SMTP_URL: ${SMTP_URL:?staging exige SMTP_URL}
+      SMTP_FROM: ${SMTP_FROM:-LexAgent staging <no-reply@staging.lex.local>}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://staging.lex.local}
+      APP_BASE_URL: ${APP_BASE_URL:-https://staging.lex.local}
+      ADMIN_MFA_REQUIRED: 'true'

@@ -1,0 +1,56 @@
+# CI: typecheck + unitarias + build + audit (api + web). Sin secretos ni red
+# externa salvo npm audit. La regresión DB y los humos corren en staging
+# (ver docs/operaciones/SECURITY_OPERATIONS.md).
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm audit --audit-level=moderate
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --audit-level=moderate
+
+  contratos:
+    runs-on: ubuntu-latest
+    needs: [api]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: python3 --version
+      - run: node --check tests/smoke/smoke_corpus.mjs && node --check tests/eval/run_eval_conv.mjs && node --check scripts/backup_db.mjs && node --check scripts/restore_db.mjs
+      - run: python3 -m py_compile tests/smoke/contract_check.py tests/eval/run_eval.py

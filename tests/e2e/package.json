@@ -1,0 +1,7 @@
+{
+  "name": "lexagent-e2e",
+  "private": true,
+  "dependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}

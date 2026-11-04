@@ -1,0 +1,19 @@
+{
+  "name": "lexagent",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspace=apps/api",
+    "audit": "npm audit --workspaces --audit-level=moderate"
+  },
+  "engines": {
+    "node": "22"
+  }
+}

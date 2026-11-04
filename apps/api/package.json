@@ -1,0 +1,39 @@
+{
+  "name": "lex-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "start:dev": "ts-node src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "ingest": "ts-node src/ingest/run.ts",
+    "test": "ts-node src/tests/db-regression.ts",
+    "test:unit": "ts-node src/tests/unit.ts",
+    "sync:secop": "ts-node src/secop/sync.ts",
+    "migrate": "ts-node src/migrations/run.ts",
+    "purge": "ts-node src/migrations/purge.ts",
+    "make:admin": "ts-node src/migrations/make-admin.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "ioredis": "^6.0.0",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "multer": "^2.5.0"
+  }
+}

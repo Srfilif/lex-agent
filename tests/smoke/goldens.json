@@ -1,0 +1,359 @@
+{
+ "health": [
+  200,
+  {
+   "status": "ok",
+   "db": "up (2026-10-27 20:38:01.137519+00)",
+   "modelGateway": {
+    "provider": "meta",
+    "model": "muse-spark-1.3",
+    "keyConfigured": true,
+    "totals": {
+     "prompt": 0,
+     "completion": 0,
+     "requests": 0
+    }
+   },
+   "time": "2026-10-27T20:38:01.140Z"
+  }
+ ],
+ "ready": [
+  200,
+  {
+   "status": "ready",
+   "db": "up (2026-10-27 20:38:01.152999+00)",
+   "migrations": 13,
+   "time": "2026-10-27T20:38:01.162Z"
+  }
+ ],
+ "search_q": [
+  200,
+  {
+   "q": "principio de transparencia",
+   "count": 2,
+   "ms": 266,
+   "hits": [
+    {
+     "chunk_id": "38e72e9e-3567-49bf-a638-f631f9b9a013",
+     "ruta": "Ley 80/1993 > Art. 24 > encabezado",
+     "texto": "ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 0.88,
+     "metodo": "hibrido",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    },
+    {
+     "chunk_id": "eb9c27cd-aa83-435b-87df-a5f638648ada",
+     "ruta": "Ley 80/1993 > Art. 24 > num. 1o > parte 3",
+     "texto": "procedimiento de licitación teniendo en cuenta, entre otros factores, la experiencia,\norganización, capacidad económica y cumplimiento del oferente?\nExtracto:\n“La Corte aprecia que la manera como la Ley 80 regula la forma de presentación y\nevaluación de las propuestas de los oferentes, es especialmente exigente para garantizar un\nprocedimiento objetivo y transparente, cerrando el paso a cualquier consideración\ndiscriminatoria que puedan llevar a cabo las autoridades. En efecto, el Estatuto de\nContratación Administrativa está estructurado con base en ciertos principios generales cuales\nson el de transparencia, el de economía y el de responsabilidad, enumerados en los artículos\n24, 25, 26 y 27 de la Ley, que están concebidos como una garantía tanto del derecho a la\nigualdad de los oferentes, como del cabal cumplimiento de los fines estatales que deben\nperseguir las autoridades”.\n“En virtud del mencionado principio de transparencia, el artículo 24, ahora bajo examen,\nentre otros requerimientos exige que en los pliegos de condiciones o términos de referencia\nse indiquen los requisitos objetivos necesarios para participar en el correspondiente proceso\nde selección, y se definan reglas objetivas, justas, claras y completas que permitan la\nconfección de ofrecimientos de la misma índole, aseguren una escogencia objetiva y eviten la\ndeclaratoria de desierta de la licitación o concurso. Prohíbe, además, la inclusión de\ncondiciones y exigencias de imposible cumplimiento, y finalmente, cabe también resaltar que\ncomo otra garantía adicional, derivada del principio de transparencia, la norma dispone que\ntoda actuación de las autoridades, derivada de la actividad contractual, deberá ser motivada”.\n“… por todo lo anteriormente expuesto, la Corte encuentra que la selección que no tuviera en\ncuenta tales circunstancias, no resultaría suficientemente garantista del interés general, y\npodría, incluso, clasificarse de negligente. Y por otro lado ve también que las circunstancias",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 0.8507,
+     "metodo": "hibrido",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    }
+   ]
+  }
+ ],
+ "search_struct": [
+  200,
+  {
+   "q": "articulo 24 de la ley 80",
+   "count": 2,
+   "ms": 7,
+   "hits": [
+    {
+     "chunk_id": "38e72e9e-3567-49bf-a638-f631f9b9a013",
+     "ruta": "Ley 80/1993 > Art. 24 > encabezado",
+     "texto": "ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 1,
+     "metodo": "estructurado",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    },
+    {
+     "chunk_id": "5034af88-a0f0-441d-bafb-4397ea96c05c",
+     "ruta": "Ley 80/1993 > Art. 24 > num. 1o > parte 1",
+     "texto": "1o. <Numeral derogado por el artículo 32 de la Ley 1150 de 2007>\nNotas de Vigencia\n- Numeral 1o. derogado por el artículo 32 de la Ley 1150 de 2007, 'por medio de la cual se\nintroducen medidas para la eficiencia y la transparencia en la Ley 80 de 1993 y se dictan\notras disposiciones generales sobre la contratación con Recursos Públicos', publicada en el\nDiario Oficial No. 46.691 de 16 de julio de 2007. Empieza a regir seis (6) meses después de\nsu promulgación según lo ordena el artículo 33 de la misma Ley.\n- Literal a) corregido por el artículo 1o. del Decreto 62 de enero 5 de 1996, 'por el cual se\ncorrige y aclara el artículo 38 del Decreto 2150 del 5 de diciembre de 1995', publicado en el\nDiario Oficial No. 42.690 de enero 17 de 1996. Empieza a regir a partir de la fecha de su\npublicación según lo ordena el artículo 2o. del mismo Decreto.\n- Literal a) modificado por el artículo 38 del Decreto extraordinario 2150 de diciembre 5 de\n1995, 'por el cual se suprimen y reforman regulaciones, procedimientos o trámites\ninnecesarios existentes en la Administración Pública', publicado en el Diario Oficial No.\n42.137 de diciembre 6 de 1995. Empieza a regir a partir de la fecha de su publicación, según\nlo ordena el artículo 152 del mismo Decreto.\nNotas del Editor\n- La Ley 1150 de 2007 en su artículo 2o. trata sobre el tema contemplado en este Numeral.\nJurisprudencia Vigencia\nCorte Constitucional:\n- La Corte Constitucional se declaró INHIBIDA de fallar sobre el numeral 1o. de este artículo\nmediante Sentencia C-949-01 de 5 de septiembre de 2001, M.P. Dra. Clara Inés Vargas\nHernández.\nProblema jurídico: ¿Los casos de contratación directa enunciados en el numeral 1o. del\nartículo 24 de la Ley 80 de 1993, vulneran la Constitución por ser generadores de corrupción\nadministrativa?\nExtracto:\n“Para esta Corporación no es posible dictar un pronunciamiento de mérito respecto de la\ndisposición acusada debido a que el actor incumple con el deber de aportar argumentos de",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 1,
+     "metodo": "estructurado",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    }
+   ]
+  }
+ ],
+ "search_empty": [
+  200,
+  {
+   "error": "falta parámetro q",
+   "hits": []
+  }
+ ],
+ "search_cov": [
+  200,
+  {
+   "documentos": 3,
+   "fragmentos": 1407,
+   "docs": [
+    {
+     "titulo": "Constitución Política de Colombia de 1991",
+     "numero": "CP/1991",
+     "tipo": "constitucion",
+     "emisor": "Asamblea Nacional Constituyente",
+     "jurisdiccion": "CO",
+     "vigencia": "vigencia_desconocida",
+     "fragmentos": 864,
+     "fecha_consulta": "2026-10-26"
+    },
+    {
+     "titulo": "Ley 1150 de 2007 — Medidas para la eficiencia y la transparencia en la Ley 80 de 1993",
+     "numero": "1150/2007",
+     "tipo": "ley",
+     "emisor": "Congreso de Colombia",
+     "jurisdiccion": "CO",
+     "vigencia": "vigencia_desconocida",
+     "fragmentos": 113,
+     "fecha_consulta": "2026-10-26"
+    },
+    {
+     "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+     "numero": "80/1993",
+     "tipo": "ley",
+     "emisor": "Congreso de Colombia",
+     "jurisdiccion": "CO",
+     "vigencia": "vigencia_desconocida",
+     "fragmentos": 430,
+     "fecha_consulta": "2026-10-26"
+    }
+   ]
+  }
+ ],
+ "search_filtros": [
+  200,
+  {
+   "q": "transparencia",
+   "count": 2,
+   "ms": 115,
+   "hits": [
+    {
+     "chunk_id": "eb9c27cd-aa83-435b-87df-a5f638648ada",
+     "ruta": "Ley 80/1993 > Art. 24 > num. 1o > parte 3",
+     "texto": "procedimiento de licitación teniendo en cuenta, entre otros factores, la experiencia,\norganización, capacidad económica y cumplimiento del oferente?\nExtracto:\n“La Corte aprecia que la manera como la Ley 80 regula la forma de presentación y\nevaluación de las propuestas de los oferentes, es especialmente exigente para garantizar un\nprocedimiento objetivo y transparente, cerrando el paso a cualquier consideración\ndiscriminatoria que puedan llevar a cabo las autoridades. En efecto, el Estatuto de\nContratación Administrativa está estructurado con base en ciertos principios generales cuales\nson el de transparencia, el de economía y el de responsabilidad, enumerados en los artículos\n24, 25, 26 y 27 de la Ley, que están concebidos como una garantía tanto del derecho a la\nigualdad de los oferentes, como del cabal cumplimiento de los fines estatales que deben\nperseguir las autoridades”.\n“En virtud del mencionado principio de transparencia, el artículo 24, ahora bajo examen,\nentre otros requerimientos exige que en los pliegos de condiciones o términos de referencia\nse indiquen los requisitos objetivos necesarios para participar en el correspondiente proceso\nde selección, y se definan reglas objetivas, justas, claras y completas que permitan la\nconfección de ofrecimientos de la misma índole, aseguren una escogencia objetiva y eviten la\ndeclaratoria de desierta de la licitación o concurso. Prohíbe, además, la inclusión de\ncondiciones y exigencias de imposible cumplimiento, y finalmente, cabe también resaltar que\ncomo otra garantía adicional, derivada del principio de transparencia, la norma dispone que\ntoda actuación de las autoridades, derivada de la actividad contractual, deberá ser motivada”.\n“… por todo lo anteriormente expuesto, la Corte encuentra que la selección que no tuviera en\ncuenta tales circunstancias, no resultaría suficientemente garantista del interés general, y\npodría, incluso, clasificarse de negligente. Y por otro lado ve también que las circunstancias",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 0.93,
+     "metodo": "hibrido",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    },
+    {
+     "chunk_id": "9137601c-7294-4820-9c16-e94b217f2063",
+     "ruta": "Ley 80/1993 > Art. 24 > Par.",
+     "texto": "PARÁGRAFO 1o. <Parágrafo derogado por el artículo 32 de la Ley 1150 de 2007>\nNotas de Vigencia\n- Parágrafo derogado por el artículo 32 de la Ley 1150 de 2007, 'por medio de la cual se\nintroducen medidas para la eficiencia y la transparencia en la Ley 80 de 1993 y se dictan\notras disposiciones generales sobre la contratación con Recursos Públicos', publicada en el\nDiario Oficial No. 46.691 de 16 de julio de 2007. Empieza a regir seis (6) meses después de\nsu promulgación según lo ordena el artículo 33 de la misma Ley.\nLegislación Anterior\nTexto original de la Ley 80 de 1993:",
+     "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+     "score": 0.9063,
+     "metodo": "hibrido",
+     "doc": {
+      "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+      "numero": "80/1993",
+      "tipo": "ley",
+      "url": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+      "vigencia": "vigencia_desconocida",
+      "autoridad": "vinculante",
+      "fecha_consulta": "2026-10-26"
+     }
+    }
+   ]
+  }
+ ],
+ "secop_entidad": [
+  200,
+  {
+   "contratos": [
+    {
+     "id": "row-wacw-ej7a_nyyq",
+     "nombre_entidad": "DISPENSARIO MEDICO DE MEDELLIN//",
+     "nit_entidad": "901540992",
+     "departamento": "Antioquia",
+     "ciudad": "Medellín",
+     "proceso_de_compra": "CO1.BDOS.1223206",
+     "id_contrato": "CO1.PCCNTR.1528820",
+     "referencia_del_contrato": "CONT-313-DMMED-CD-2020",
+     "estado_contrato": "enviado Proveedor",
+     "descripcion_del_proceso": "La prestación de servicios profesionales como MEDICO GENERAL que requiere Medicina Laboral de la Séptima División en la Ciudad de Medellín.",
+     "objeto_del_contrato": "La prestación de servicios profesionales como MEDICO GENERAL que requiere Medicina Laboral de la Séptima División en la Ciudad de Medellín.",
+     "tipo_de_contrato": "Prestación de servicios",
+     "modalidad_de_contratacion": "Contratación directa",
+     "fecha_de_firma": null,
+     "fecha_de_inicio_del_contrato": null,
+     "fecha_de_fin_del_contrato": "2020-07-31T12:00:00.000Z",
+     "proveedor_adjudicado": "geraldine bejarano",
+     "documento_proveedor": "1077456496",
+     "valor_del_contrato": 15375360,
+     "valor_facturado": 0,
+     "valor_pagado": 0,
+     "dias_adicionados": 0,
+     "urlproceso": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.1221208&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "ultima_actualizacion": null,
+     "synced_at": "2026-10-26T18:16:13.932Z",
+     "enlace_origen": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.1221208&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "senales": [
+      {
+       "regla": "contratacion_directa",
+       "detalle": "Modalidad: Contratación directa. Revisar justificación."
+      }
+     ]
+    },
+    {
+     "id": "row-tqam_teq4~jgx8",
+     "nombre_entidad": "SENA REGIONAL ANTIOQUIA Grupo Administrativo Intercentros Medellin",
+     "nit_entidad": "899999034",
+     "departamento": "Antioquia",
+     "ciudad": "Medellín",
+     "proceso_de_compra": "CO1.BDOS.9698406",
+     "id_contrato": "CO1.PCCNTR.9113273",
+     "referencia_del_contrato": "CO1.PCCNTR.9113273",
+     "estado_contrato": "enviado Proveedor",
+     "descripcion_del_proceso": "5_9206_0031 PRESTAR LOS SERVICIOS PERSONALES DE CARÁCTER TEMPORAL PARA APOYAR LOS PROCESOS ADMINISTRATIVOS LIQUIDACION Y LEGALIZACIONES DE GASTOS DE VIAJE Y VIATICOS DEL CTGI Y LAS SUBSEDES.",
+     "objeto_del_contrato": "5_9206_0031 PRESTAR LOS SERVICIOS PERSONALES DE CARÁCTER TEMPORAL PARA APOYAR LOS PROCESOS ADMINISTRATIVOS LIQUIDACION Y LEGALIZACIONES DE GASTOS DE VIAJE Y VIATICOS DEL CTGI Y LAS SUBSEDES.",
+     "tipo_de_contrato": "Prestación de servicios",
+     "modalidad_de_contratacion": "Contratación directa",
+     "fecha_de_firma": null,
+     "fecha_de_inicio_del_contrato": null,
+     "fecha_de_fin_del_contrato": "2026-12-17T23:59:00.000Z",
+     "proveedor_adjudicado": "Servicio Nacional de Aprendizaje SENA",
+     "documento_proveedor": "1035441656",
+     "valor_del_contrato": 30158745,
+     "valor_facturado": 0,
+     "valor_pagado": 0,
+     "dias_adicionados": 0,
+     "urlproceso": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.9728541&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "ultima_actualizacion": null,
+     "synced_at": "2026-10-26T18:16:13.458Z",
+     "enlace_origen": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.9728541&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "senales": [
+      {
+       "regla": "contratacion_directa",
+       "detalle": "Modalidad: Contratación directa. Revisar justificación."
+      }
+     ]
+    }
+   ],
+   "fecha_consulta": "2026-10-26T23:49:20.023Z",
+   "modo": "sincronizado (contratos más recientes; re-sync con npm run sync:secop)",
+   "dataset": "jbjy-vk9h",
+   "count": 2,
+   "advertencia": "Datos de calidad variable (ver PUBLIC_DATA_SOURCES.md). Las señales son indicios para revisar, no prueba de irregularidad."
+  }
+ ],
+ "secop_objeto": [
+  200,
+  {
+   "contratos": [
+    {
+     "id": "row-zeqp~yfjs.t2t7",
+     "nombre_entidad": "DEPARTAMENTO DEL VALLE DEL CAUCA - UNIDAD ADMINISTRATIVA ESPECIAL DE IMPUESTOS RENTAS Y GESTION TRIBUTARIA",
+     "nit_entidad": "890399029",
+     "departamento": "Valle del Cauca",
+     "ciudad": "Cali",
+     "proceso_de_compra": "CO1.BDOS.11068730",
+     "id_contrato": "CO1.PCCNTR.10105839",
+     "referencia_del_contrato": "1.120.80-19.13-14862-2026",
+     "estado_contrato": "En aprobación",
+     "descripcion_del_proceso": "PRESTACIÓN DE SERVICIOS DE UNA PLATAFORMA TECNOLÓGICA DE SOFTWARE PARA LA SISTEMATIZACIÓN; AUTOMATIZACIÓN E INTERCONEXIÓN CON EL MÓDULO DE CONTROL Y SEÑALIZACIÓN DE PRODUCTOS GRAVADOS CON EL IMPUESTO AL CONSUMO DE LICORES; PARTICIPACIÓN DE LICORES Y ALCOHOL POTABLE; VINOS; APERITIVOS Y SIMILARES; CE",
+     "objeto_del_contrato": "PRESTACIÓN DE SERVICIOS DE UNA PLATAFORMA TECNOLÓGICA DE SOFTWARE PARA LA SISTEMATIZACIÓN; AUTOMATIZACIÓN E INTERCONEXIÓN CON EL MÓDULO DE CONTROL Y SEÑALIZACIÓN DE PRODUCTOS GRAVADOS CON EL IMPUESTO AL CONSUMO DE LICORES; PARTICIPACIÓN DE LICORES Y ALCOHOL POTABLE; VINOS; APERITIVOS Y SIMILARES; CERVEZAS; SIFONES; MEZCLAS Y REFAJOS; ASÍ COMO CIGARRILLOS Y TABACO ELABORADO; MEDIANTE LOS MECANISMOS DE TRAZABILIDAD DISPONIBLES EN EL MÓDULO INFOCONSUMO",
+     "tipo_de_contrato": "Prestación de servicios",
+     "modalidad_de_contratacion": "Contratación directa",
+     "fecha_de_firma": null,
+     "fecha_de_inicio_del_contrato": null,
+     "fecha_de_fin_del_contrato": "2026-12-31T23:59:00.000Z",
+     "proveedor_adjudicado": "SISTEMAS Y COMPUTADORES S.A.",
+     "documento_proveedor": "890206351",
+     "valor_del_contrato": 2999949440,
+     "valor_facturado": 0,
+     "valor_pagado": 0,
+     "dias_adicionados": 0,
+     "urlproceso": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11112113&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "ultima_actualizacion": null,
+     "synced_at": "2026-10-26T18:16:13.424Z",
+     "enlace_origen": "{\"url\":\"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11112113&isFromPublicArea=True&isModal=true&asPopupView=true\"}",
+     "senales": [
+      {
+       "regla": "contratacion_directa",
+       "detalle": "Modalidad: Contratación directa. Revisar justificación."
+      }
+     ]
+    }
+   ],
+   "fecha_consulta": "2026-10-26T23:49:20.023Z",
+   "modo": "sincronizado (contratos más recientes; re-sync con npm run sync:secop)",
+   "dataset": "jbjy-vk9h",
+   "count": 1,
+   "advertencia": "Datos de calidad variable (ver PUBLIC_DATA_SOURCES.md). Las señales son indicios para revisar, no prueba de irregularidad."
+  }
+ ],
+ "chunk_ok": [
+  200,
+  {
+   "chunk_id": "38e72e9e-3567-49bf-a638-f631f9b9a013",
+   "ruta": "Ley 80/1993 > Art. 24 > encabezado",
+   "texto": "ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+   "texto_contexto": "Ley 80/1993 > Art. 24 — ARTÍCULO 24. DEL PRINCIPIO DE TRANSPARENCIA. En virtud de este principio:",
+   "doc": {
+    "titulo": "Ley 80 de 1993 — Estatuto General de Contratación de la Administración Pública",
+    "numero": "80/1993",
+    "tipo": "ley",
+    "url_original": "https://www.secretariasenado.gov.co/senado/basedoc/ley_0080_1993.html",
+    "vigencia": "vigencia_desconocida",
+    "autoridad": "vinculante",
+    "fecha_consulta": "2026-10-26"
+   }
+  }
+ ],
+ "chunk_bad": [
+  400,
+  {
+   "statusCode": 400,
+   "message": "Validation failed (uuid v 4 is expected)"
+  }
+ ],
+ "_chunk_id": "38e72e9e-3567-49bf-a638-f631f9b9a013"
+}

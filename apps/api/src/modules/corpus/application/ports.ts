@@ -1,0 +1,7 @@
+// Puertos de entrada/salida del caso de uso de búsqueda.
+
+export const EMBEDDING_PORT = Symbol('EMBEDDING_PORT');
+
+export interface EmbeddingPort {
+  embed(texts: string[]): Promise<number[][]>;
+}
