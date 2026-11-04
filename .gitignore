@@ -38,3 +38,10 @@ test-results/
 Thumbs.db
 .vscode/
 .idea/
+
+# Otros VCS y estado local de agentes (no commitear stores ajenos)
+.hg/
+.sl/
+.eden/
+.agents/
+.muse/

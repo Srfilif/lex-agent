@@ -2,7 +2,8 @@
 
 Cada `e2e_*.mjs` es un escenario independiente (cuenta, archivos, chat,
 guardarraíles, memoria, modelos, storage, visual...). Instalación separada
-a propósito (no es workspace del monorepo).
+a propósito: cada app (`apps/api`, `apps/web`, `tests/e2e`) tiene su propio
+`package-lock.json` y se instala por separado.
 
 ## Requisitos
 
