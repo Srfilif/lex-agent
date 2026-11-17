@@ -1,11 +1,11 @@
 // B11: preguntas de seguimiento baratas (una llamada sin tools por pedido).
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { ChatMsg, ModelGateway } from '../../../gateway/model-gateway';
+import { ChatMsg, LLM_CHAT, LlmChatPort } from '../../../shared/llm';
 import { balancedJson } from '../../../shared/json/balanced';
 import { costoTokens } from '../../../shared/pricing';
 import { limiteExcedido, RATE_LIMITER, RateLimiter } from '../../identity';
-import { BillingForAgent } from '../../billing';
+import { AGENT_BILLING, AgentBillingPort } from '../../billing';
 import { ConversationProps, MessageRole } from '../domain/conversation';
 import {
   CONVERSATION_REPOSITORY,
@@ -72,8 +72,8 @@ export function parseSuggestions(text: string): string[] {
 @Injectable()
 export class ChatSuggestions {
   constructor(
-    private readonly gateway: ModelGateway,
-    private readonly billing: BillingForAgent,
+    @Inject(LLM_CHAT) private readonly gateway: LlmChatPort,
+    @Inject(AGENT_BILLING) private readonly billing: AgentBillingPort,
     @Inject(CONVERSATION_REPOSITORY) private readonly convs: ConversationRepository,
     @Inject(MESSAGE_REPOSITORY) private readonly msgs: MessageRepository,
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,

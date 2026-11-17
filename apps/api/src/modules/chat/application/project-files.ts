@@ -235,16 +235,17 @@ export class ProjectFiles {
     const query = q.trim().slice(0, 500);
     if (query.length < 2) throw archivoInvalido('búsqueda muy corta (mín. 2)');
     const top = Math.min(Math.max(Math.trunc(topK) || 8, 1), 20);
-    let vec: number[][];
-    try {
-      vec = await this.embeddings.embed([query]);
-    } catch {
-      throw embeddingsNoDisponibles();
-    }
-    const [ftsIds, vecIds] = await Promise.all([
-      this.files.ftsRanked(projectId, query, 20),
-      this.files.vectorRanked(projectId, vec[0] ?? [], 20),
-    ]);
+    // Embeddings caídos → solo FTS, sin 503 (igual que el corpus).
+    const ftsP = this.files.ftsRanked(projectId, query, 20);
+    const vecP = this.embeddings
+      .embed([query])
+      .then((v) => this.files.vectorRanked(projectId, v[0] ?? [], 20))
+      .catch((e: Error): string[] => {
+        // eslint-disable-next-line no-console
+        console.warn(`[chat] embeddings no disponibles en proyecto, solo FTS: ${e.message}`);
+        return [];
+      });
+    const [ftsIds, vecIds] = await Promise.all([ftsP, vecP]);
     const fused = fuseRrf(ftsIds, vecIds, new Set(), top);
     if (!fused.length) return [];
     const rows = await this.files.chunksByIds(fused.map((f) => f.id));

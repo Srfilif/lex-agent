@@ -23,6 +23,23 @@ docker compose up -d db        # aplica init.sql al crear el volumen
 cd apps/api; npm run migrate   # aplica 005→017 (005–019 según regex)
 ```
 
+```powershell
+# Postgres propio sin Docker (requiere extensión pgvector instalada):
+psql -d lexdb -f db/init.sql
+psql -d lexdb -f db/migrations/002_unaccent.sql -f db/migrations/003_secop_contratos.sql -f db/migrations/004_investigaciones.sql
+cd apps/api; npm run migrate
+# Apunta DATABASE_URL en el .env a ese Postgres y arranca con npm run dev
+```
+
+## SQLite (dev local)
+
+Con `DATABASE_PROVIDER=sqlite`, `npm run migrate` aplica
+`db/sqlite/schema.sql` (espejo del estado final: 27 tablas + catálogo de
+planes) al fichero `SQLITE_PATH` (default `data/lexdb.sqlite`, ignorado
+por git). Diferencias: sin extensiones ni tsvector/HNSW, `embedding`
+como TEXT-JSON, booleanos 0/1 y timestamps ISO-UTC. Para resetear: borra
+el `.sqlite` y repite `migrate` (+ `seed` si quieres usuarios).
+
 Resumen del modelo: `docs/arquitectura/DATABASE_SCHEMA.md`.
 Backups: `node scripts/backup_db.mjs [salida]` (dumps en `backups/`,
 nunca commitear).

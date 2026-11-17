@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Db } from '../../../db';
+import { asJson, cosine, termsForLike } from '../../../shared/db/dialect';
 import { escapeLike } from '../../../shared/sql';
 import {
   ChunkRef,
@@ -11,7 +12,7 @@ import {
   NuevoDocumento,
 } from '../domain/repositories';
 
-// Implementación pg del puerto del corpus. SQL idéntico al anterior servicio.
+// Implementación dual pg/sqlite del puerto del corpus (ramas sqlite marcadas).
 @Injectable()
 export class PgCorpusRepository implements CorpusRepository {
   constructor(private readonly db: Db) {}
@@ -23,11 +24,13 @@ export class PgCorpusRepository implements CorpusRepository {
       params.push(v);
       where.push(cond.replace('?', `$${params.length}`));
     };
+    const like = (col: string): string =>
+      this.db.isSqlite ? `LOWER(${col}) LIKE LOWER(?)` : `${col} ILIKE ?`;
     if (f.tipo) push('d.tipo = ?', f.tipo);
-    if (f.emisor) push('d.emisor ILIKE ?', `%${escapeLike(f.emisor)}%`);
+    if (f.emisor) push(like('d.emisor'), `%${escapeLike(f.emisor)}%`);
     if (f.numero) push('d.numero LIKE ?', f.numero);
     if (f.jurisdiccion) push('d.jurisdiccion = ?', f.jurisdiccion);
-    if (f.tema) push('d.tema ILIKE ?', `%${escapeLike(f.tema)}%`);
+    if (f.tema) push(like('d.tema'), `%${escapeLike(f.tema)}%`);
     return { clause: where.length ? `AND ${where.join(' AND ')}` : '', params };
   }
 
@@ -60,6 +63,7 @@ export class PgCorpusRepository implements CorpusRepository {
   async ftsRanked(query: string, f: CorpusFiltros, limit: number): Promise<string[]> {
     limit = this.safeLimit(limit);
     const { clause, params } = this.filters(f);
+    if (this.db.isSqlite) return this.ftsRankedSqlite(params, clause, query, limit);
     const fp = [...params, query];
     const r = await this.db.raw.query(
       `SELECT c.chunk_id, ts_rank(c.fts, plainto_tsquery('lex_spanish', $${fp.length})) AS s
@@ -71,9 +75,40 @@ export class PgCorpusRepository implements CorpusRepository {
     return r.rows.map((row) => row.chunk_id as string);
   }
 
+  /** Fallback LIKE (sin tsvector): cuenta términos en texto+contexto. */
+  private async ftsRankedSqlite(
+    params: unknown[],
+    clause: string,
+    query: string,
+    limit: number,
+  ): Promise<string[]> {
+    const terms = termsForLike(query);
+    if (!terms.length) return [];
+    const sp = [...params];
+    const per: string[] = [];
+    for (const t of terms) {
+      sp.push(`%${t}%`, `%${t}%`);
+      const a = sp.length - 1;
+      const b = sp.length;
+      per.push(
+        `(CASE WHEN LOWER(c.texto) LIKE $${a} OR LOWER(c.texto_contexto) LIKE $${b} THEN 1 ELSE 0 END)`,
+      );
+    }
+    const score = per.join(' + ');
+    const r = await this.db.raw.query(
+      `SELECT c.chunk_id, (${score}) AS s
+       FROM chunks c JOIN documents d ON d.id = c.doc_id
+       WHERE (${score}) > 0 ${clause}
+       ORDER BY s DESC LIMIT ${limit}`,
+      sp,
+    );
+    return r.rows.map((row) => row.chunk_id as string);
+  }
+
   async vectorRanked(embedding: number[], f: CorpusFiltros, limit: number): Promise<string[]> {
     limit = this.safeLimit(limit);
     const { clause, params } = this.filters(f);
+    if (this.db.isSqlite) return this.vectorRankedSqlite(params, clause, embedding, limit);
     const lit = `[${embedding.join(',')}]`;
     const vp = [...params, lit];
     const r = await this.db.raw.query(
@@ -86,8 +121,41 @@ export class PgCorpusRepository implements CorpusRepository {
     return r.rows.map((row) => row.chunk_id as string);
   }
 
+  /** Fallback vectorial (sin pgvector): coseno en JS sobre embeddings JSON. */
+  private async vectorRankedSqlite(
+    params: unknown[],
+    clause: string,
+    embedding: number[],
+    limit: number,
+  ): Promise<string[]> {
+    const r = await this.db.raw.query(
+      `SELECT c.chunk_id, c.embedding
+       FROM chunks c JOIN documents d ON d.id = c.doc_id
+       WHERE c.embedding IS NOT NULL ${clause}`,
+      params,
+    );
+    return r.rows
+      .map((row) => ({
+        id: row.chunk_id as string,
+        s: cosine(embedding, asJson<number[]>(row.embedding, [])),
+      }))
+      .sort((a, b) => b.s - a.s)
+      .slice(0, limit)
+      .map((x) => x.id);
+  }
+
   async chunksByIds(ids: string[]): Promise<ChunkRow[]> {
     if (!ids.length) return [];
+    if (this.db.isSqlite) {
+      const r = await this.db.raw.query(
+        `SELECT c.chunk_id, c.ruta, c.texto, c.texto_contexto,
+                d.titulo, d.numero, d.tipo, d.url_original, d.vigencia, d.autoridad, d.fecha_consulta
+         FROM chunks c JOIN documents d ON d.id = c.doc_id
+         WHERE c.chunk_id IN (${ids.map((_, i) => `$${i + 1}`).join(',')})`,
+        ids,
+      );
+      return r.rows;
+    }
     const r = await this.db.raw.query(
       `SELECT c.chunk_id, c.ruta, c.texto, c.texto_contexto,
               d.titulo, d.numero, d.tipo, d.url_original, d.vigencia, d.autoridad, d.fecha_consulta
@@ -117,7 +185,7 @@ export class PgCorpusRepository implements CorpusRepository {
   async documentStats(): Promise<DocumentoCobertura[]> {
     const r = await this.db.raw.query(
       `SELECT d.titulo, d.numero, d.tipo, d.emisor, d.jurisdiccion, d.vigencia,
-              d.fecha_consulta, COUNT(c.chunk_id)::int AS chunks
+              d.fecha_consulta, CAST(COUNT(c.chunk_id) AS INTEGER) AS chunks
        FROM documents d LEFT JOIN chunks c ON c.doc_id = d.id
        GROUP BY d.id ORDER BY d.titulo`,
     );
@@ -184,7 +252,7 @@ export class PgCorpusRepository implements CorpusRepository {
             c.offset_fin,
             c.texto,
             c.texto_contexto,
-            `[${c.embedding.join(',')}]`,
+            c.embedding ? `[${c.embedding.join(',')}]` : null,
           ],
         );
       }

@@ -57,6 +57,11 @@ async function main(): Promise<void> {
       console.log(`Ya existe: ${r.id} (${r.titulo}). Nada que hacer.`);
     } else {
       console.log(`OK doc=${r.docId} chunks=${r.chunks} dims=${r.dims}`);
+      if (r.dims === 0) {
+        console.log(
+          'AVISO: sin vectores (solo FTS). Para vectores: EMBED_PROVIDER=gemini (+EMBED_API_KEY) u ollama + bge-m3.',
+        );
+      }
     }
   } finally {
     await app.close();

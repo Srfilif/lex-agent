@@ -16,6 +16,7 @@ import {
 } from './application/profile';
 import { GetPreferences, UpdatePreferences } from './application/preferences';
 import { Memories, MemoryForAgent } from './application/memories';
+import { MEMORY_FOR_AGENT } from './application/ports';
 import {
   ConfirmAccountDelete,
   ExportAccount,
@@ -42,10 +43,11 @@ import { AccountPreferencesController } from './presentation/http/account.contro
     UpdatePreferences,
     Memories,
     MemoryForAgent,
+    { provide: MEMORY_FOR_AGENT, useExisting: MemoryForAgent },
     ExportAccount,
     RequestAccountDelete,
     ConfirmAccountDelete,
   ],
-  exports: [MemoryForAgent],
+  exports: [MEMORY_FOR_AGENT, MemoryForAgent],
 })
 export class AccountModule {}

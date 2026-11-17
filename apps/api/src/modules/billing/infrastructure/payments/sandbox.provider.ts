@@ -12,7 +12,6 @@ import {
 } from '../../application/ports';
 import { eventoMalformado } from '../../application/errors';
 
-export const SANDBOX_SIGNATURE_HEADER = 'x-sandbox-signature';
 
 function isEventType(v: unknown): v is ProviderEventType {
   return v === 'payment.succeeded' || v === 'payment.failed' || v === 'refund.succeeded';
@@ -20,6 +19,7 @@ function isEventType(v: unknown): v is ProviderEventType {
 
 export class SandboxPaymentProvider implements PaymentProvider {
   readonly name = 'sandbox';
+  readonly signatureHeader = 'x-sandbox-signature';
 
   constructor(private readonly webhookSecret: string) {}
 

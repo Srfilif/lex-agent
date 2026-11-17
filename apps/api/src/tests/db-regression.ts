@@ -1,11 +1,17 @@
-// Regresión DB (sin framework: ts-node + pg, sale 1 si algo falla).
+// Regresión DB postgres (sin framework: ts-node + pg, sale 1 si algo falla).
 // Uso: npm test   (requiere `docker compose up -d db`)
+// Se omite con DATABASE_PROVIDER=sqlite (ver test:sqlite).
 // Origen: Día 2, FTS 'spanish' no hallaba 'contratación' al buscar
 // 'contratacion' → se creó la config lex_spanish (unaccent + spanish_stem).
 import { Pool } from 'pg';
 import { loadAppConfig } from '../shared/config';
 
-const pool = new Pool({ connectionString: loadAppConfig(__dirname).databaseUrl });
+const cfg = loadAppConfig(__dirname);
+if (cfg.databaseProvider === 'sqlite') {
+  console.log('regresión pg omitida (DATABASE_PROVIDER=sqlite; usa npm run test:sqlite)');
+  process.exit(0);
+}
+const pool = new Pool({ connectionString: cfg.databaseUrl });
 let fails = 0;
 
 async function check(name: string, sql: string): Promise<void> {

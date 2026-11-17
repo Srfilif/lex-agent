@@ -1,31 +1,35 @@
 import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Pool } from 'pg';
 import { AppConfig, CONFIG } from './shared/config';
+import { DbDriver, createDriver } from './shared/db/provider';
 
 @Injectable()
 export class Db implements OnModuleInit, OnModuleDestroy {
-  private pool!: Pool;
+  private driver!: DbDriver;
 
   constructor(@Inject(CONFIG) private readonly cfg: AppConfig) {}
 
+  /** Dialecto activo (las ramas SQL lo consultan). */
+  get isSqlite(): boolean {
+    return this.cfg.databaseProvider === 'sqlite';
+  }
+
   async onModuleInit(): Promise<void> {
-    this.pool = new Pool({
-      connectionString: this.cfg.databaseUrl,
-      max: 10,
-    });
-    await this.pool.query('SELECT 1');
+    this.driver = createDriver(this.cfg);
+    await this.driver.init();
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.pool?.end();
+    await this.driver?.end();
   }
 
   async ping(): Promise<string> {
-    const r = await this.pool.query('SELECT now()::text AS now');
+    const r = await this.driver.query(
+      this.isSqlite ? 'SELECT CURRENT_TIMESTAMP AS now' : 'SELECT now()::text AS now',
+    );
     return r.rows[0].now as string;
   }
 
-  get raw(): Pool {
-    return this.pool;
+  get raw(): DbDriver {
+    return this.driver;
   }
 }

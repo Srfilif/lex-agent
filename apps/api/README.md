@@ -10,8 +10,13 @@ rotatorias, TOTP, RBAC), planes/cuotas y facturación sandbox.
 - `build` / `start` — compila a `dist/` y sirve.
 - `typecheck` — `tsc --noEmit`.
 - `test:unit` — unitarias de dominio puro, sin DB ni red.
+- `test:architecture` — verifica límites DDD/Clean (dominio puro, aplicación
+  sin infraestructura y módulos por interfaz pública).
 - `test` — regresión contra DB viva (`src/tests/db-regression.ts`).
-- `migrate` — aplica `db/migrations/005→017` (tracking `schema_migrations`).
+- `test:sqlite` — e2e contra sqlite temporal (`src/tests/db-sqlite.ts`).
+- `migrate` — aplica `db/migrations/005→017` (tracking `schema_migrations`),
+  o `db/sqlite/schema.sql` si `DATABASE_PROVIDER=sqlite`.
+- `seed` — usuario + admin de prueba (idempotente, rehusado en producción).
 - `ingest -- <manifiesto>` — ingiere corpus desde `data/raw/` (no commiteado).
 - `sync:secop -- <n>` — sincroniza contratos SECOP.
 - `purge` — purga sesiones muertas y eventos viejos.
@@ -32,12 +37,17 @@ Salud: `GET /health`, `GET /ready`. Contratos canónicos en
 
 ## Módulos (`src/modules/`)
 
-`account`, `billing`, `chat`, `corpus`, `identity`, `ops`, más `agent/`,
-`gateway/`, `ingest/`, `report/`, `secop/`, `verify/`, `shared/`, `migrations/`.
+`account`, `billing`, `chat`, `corpus`, `identity`, `ops`, `secop` y
+`research` (investigador + verificación + informe). `shared/` contiene config,
+logging, utilidades de DB, el puerto LLM y su adaptador. `ingest/` y
+`migrations/` son entrypoints operativos.
+
+Reglas de capas, puertos y enforcement: `docs/arquitectura/ARQUITECTURA_DDD.md`.
 
 ## Entorno
 
 `DATABASE_URL` (default `postgres://lex:lexdev@localhost:5433/lexdb`),
-`META_API_KEY`, `OLLAMA_HOST`, `REDIS_URL`, secretos de auth/TOTP/billing.
+`META_API_KEY`, `EMBED_PROVIDER` (`meta`|`ollama`|`gemini`, default `ollama`),
+`OLLAMA_HOST`, `REDIS_URL`, secretos de auth/TOTP/billing.
 Lista completa en `.env.example` (raíz). Con `NODE_ENV=production` el arranque
 falla rápido si faltan secretos, SMTP o CORS https.

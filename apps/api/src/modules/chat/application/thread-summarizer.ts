@@ -3,9 +3,9 @@
 // truncado clásico (el siguiente mensaje reintenta). Sin fallbacks de
 // modelo: el resumen nunca debe romper un chat (B11: llamadas baratas).
 import { Inject, Injectable } from '@nestjs/common';
-import { ChatMsg, ModelGateway } from '../../../gateway/model-gateway';
+import { ChatMsg, LLM_CHAT, LlmChatPort } from '../../../shared/llm';
 import { balancedJson } from '../../../shared/json/balanced';
-import { MemoryForAgent } from '../../account';
+import { MEMORY_FOR_AGENT, MemoryForAgentPort } from '../../account';
 import { Conversation } from '../domain/conversation';
 import { planCompaction, SUMMARY_MAX_CHARS, takeSummaryBatch } from '../domain/memory';
 import { CONVERSATION_REPOSITORY, ConversationRepository } from '../domain/repositories';
@@ -58,9 +58,9 @@ const USO_CERO = { prompt: 0, completion: 0, total: 0 };
 @Injectable()
 export class ThreadSummarizer {
   constructor(
-    private readonly gateway: ModelGateway,
+    @Inject(LLM_CHAT) private readonly gateway: LlmChatPort,
     @Inject(CONVERSATION_REPOSITORY) private readonly convs: ConversationRepository,
-    private readonly memory: MemoryForAgent,
+    @Inject(MEMORY_FOR_AGENT) private readonly memory: MemoryForAgentPort,
   ) {}
 
   /**

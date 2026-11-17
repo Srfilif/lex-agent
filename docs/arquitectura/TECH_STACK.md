@@ -5,7 +5,7 @@
 | API | NestJS (Express) + TypeScript | Nest 11, Node 22 | Modular por defecto; coincide con SYSTEM_ARCHITECTURE |
 | DB | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | FTS español + vectores en una sola base |
 | LLM razonamiento | Meta Model API `muse-spark-1.3` | vía `ModelGateway` | Verificado Día 0; `tool_choice` solo `auto` |
-| Embeddings | bge-m3 local vía Ollama (multilingüe, 1024 dims) | `ollama/ollama` + `bge-m3` (1.2 GB) | Meta → 404 (Q1 cerrada). Interfaz: `ModelGateway.embed()` |
+| Embeddings | `EMBED_PROVIDER`: `gemini` (dedicado, 3072 dims), `ollama` (bge-m3 local, 1024) o `meta` (404 → solo-FTS) | `gemini` = key `EMBED_API_KEY`; `ollama` = `ollama/ollama` + `bge-m3` (1.2 GB) | pg `vector` sigue al proveedor (mig 018 = 3072). Interfaz: `ModelGateway.embed()` |
 | Rerank | RRF sin reranker (identidad) | — | `ModelGateway.rerank()` sustituible |
 | Contenedores | Docker Compose | Compose v5 | `docker compose up` levanta DB + API |
 

@@ -1,6 +1,6 @@
 # CITATION_VERIFICATION — verificador formal (Día 6)
 
-Implementación: [verifier.service.ts](/absolute/path/C:\Dev\Hackaton\LexAgent/apps/api/src/verify/verifier.service.ts). Informe: `GET /report/:id`.
+Implementación: [`verify-investigation.ts`](../../apps/api/src/modules/research/application/verify-investigation.ts). Informe: `GET /report/:id` (caso de uso en [`build-report.ts`](../../apps/api/src/modules/research/application/build-report.ts)).
 
 ## Niveles por afirmación
 

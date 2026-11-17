@@ -1,12 +1,13 @@
 import { Global, Module } from '@nestjs/common';
 import { Db } from '../db';
-import { ModelGateway } from '../gateway/model-gateway';
+import { ModelGateway } from './llm/model-gateway';
+import { LLM_CHAT } from './llm';
 
-// Núcleo compartido transitorio (Bloque B): expone Db y ModelGateway a los
-// módulos hasta que tengan módulo propio (Bloques D: LlmModule, database).
+// Núcleo compartido: conexión de datos y adaptador LLM. La aplicación consume
+// los puertos (`LLM_CHAT`), no las clases concretas.
 @Global()
 @Module({
-  providers: [Db, ModelGateway],
-  exports: [Db, ModelGateway],
+  providers: [Db, ModelGateway, { provide: LLM_CHAT, useExisting: ModelGateway }],
+  exports: [Db, ModelGateway, LLM_CHAT],
 })
 export class SharedModule {}

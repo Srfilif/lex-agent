@@ -1,6 +1,7 @@
 // Repositorio pg de archivos y chunks de proyecto (B6). Espejo del patrón corpus.
 import { Injectable } from '@nestjs/common';
 import { Db } from '../../../../db';
+import { asBool, asDate, asJson, cosine, termsForLike } from '../../../../shared/db/dialect';
 import { ProjectFileProps } from '../../domain/project-files';
 import {
   NuevoProjectChunk,
@@ -37,8 +38,8 @@ function toProps(r: FileRow): ProjectFileProps {
     status: r.status,
     error: r.error,
     chunkCount: Number(r.chunk_count),
-    createdAt: r.created_at,
-    sospechoso: r.sospechoso ?? false,
+    createdAt: asDate(r.created_at),
+    sospechoso: asBool(r.sospechoso ?? false),
   };
 }
 
@@ -135,7 +136,7 @@ export class PgProjectFileRepository implements ProjectFileRepository {
 
   async usageByProject(projectId: string): Promise<{ count: number; bytes: number }> {
     const r = await this.db.raw.query(
-      `SELECT count(*)::int AS n, coalesce(sum(size_bytes), 0)::int AS b
+      `SELECT CAST(count(*) AS INTEGER) AS n, CAST(coalesce(sum(size_bytes), 0) AS INTEGER) AS b
        FROM project_files WHERE project_id = $1`,
       [projectId],
     );
@@ -147,11 +148,12 @@ export class PgProjectFileRepository implements ProjectFileRepository {
     const client = await this.db.raw.connect();
     try {
       await client.query('BEGIN');
+      const vec7 = this.db.isSqlite ? '$7' : '$7::vector';
       for (const c of chunks) {
         await client.query(
           `INSERT INTO project_chunks
            (file_id, project_id, n, ruta, texto, texto_contexto, embedding)
-           VALUES ($1, $2, $3, $4, $5, $6, $7::vector)`,
+           VALUES ($1, $2, $3, $4, $5, $6, ${vec7})`,
           [fileId, projectId, c.n, c.ruta, c.texto, c.textoContexto, `[${c.embedding.join(',')}]`],
         );
       }
@@ -170,6 +172,29 @@ export class PgProjectFileRepository implements ProjectFileRepository {
 
   async ftsRanked(projectId: string, q: string, limit: number): Promise<string[]> {
     const lim = Math.min(Math.max(Math.trunc(limit) || 20, 1), 50);
+    if (this.db.isSqlite) {
+      const terms = termsForLike(q);
+      if (!terms.length) return [];
+      const sp: unknown[] = [projectId];
+      const per: string[] = [];
+      for (const t of terms) {
+        sp.push(`%${t}%`, `%${t}%`);
+        const a = sp.length - 1;
+        const b = sp.length;
+        per.push(
+          `(CASE WHEN LOWER(c.texto) LIKE $${a} OR LOWER(c.texto_contexto) LIKE $${b} THEN 1 ELSE 0 END)`,
+        );
+      }
+      const score = per.join(' + ');
+      const r = await this.db.raw.query(
+        `SELECT c.chunk_id, (${score}) AS s
+         FROM project_chunks c
+         WHERE c.project_id = $1 AND (${score}) > 0
+         ORDER BY s DESC LIMIT ${lim}`,
+        sp,
+      );
+      return (r.rows as Array<{ chunk_id: string }>).map((row) => row.chunk_id);
+    }
     const r = await this.db.raw.query(
       `SELECT c.chunk_id, ts_rank(c.fts, plainto_tsquery('lex_spanish', $2)) AS s
        FROM project_chunks c
@@ -182,6 +207,21 @@ export class PgProjectFileRepository implements ProjectFileRepository {
 
   async vectorRanked(projectId: string, embedding: number[], limit: number): Promise<string[]> {
     const lim = Math.min(Math.max(Math.trunc(limit) || 20, 1), 50);
+    if (this.db.isSqlite) {
+      const r = await this.db.raw.query(
+        `SELECT c.chunk_id, c.embedding FROM project_chunks c
+         WHERE c.project_id = $1 AND c.embedding IS NOT NULL`,
+        [projectId],
+      );
+      return r.rows
+        .map((row) => ({
+          id: row.chunk_id as string,
+          s: cosine(embedding, asJson<number[]>(row.embedding, [])),
+        }))
+        .sort((a, b) => b.s - a.s)
+        .slice(0, lim)
+        .map((x) => x.id);
+    }
     const r = await this.db.raw.query(
       `SELECT c.chunk_id, 1 - (c.embedding <=> $2::vector) AS s
        FROM project_chunks c
@@ -194,6 +234,13 @@ export class PgProjectFileRepository implements ProjectFileRepository {
 
   async chunksByIds(ids: string[]): Promise<ProjectChunkHit[]> {
     if (!ids.length) return [];
+    if (this.db.isSqlite) {
+      const r = await this.db.raw.query(
+        `SELECT ${CHUNK_SELECT} WHERE c.chunk_id IN (${ids.map((_, i) => `$${i + 1}`).join(',')})`,
+        ids,
+      );
+      return (r.rows as ChunkRow[]).map((row) => toHit(row, 0));
+    }
     const r = await this.db.raw.query(`SELECT ${CHUNK_SELECT} WHERE c.chunk_id = ANY($1)`, [ids]);
     return (r.rows as ChunkRow[]).map((row) => toHit(row, 0));
   }

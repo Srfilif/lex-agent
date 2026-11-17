@@ -1,6 +1,7 @@
 // Repositorios pg de billing. consume() es transaccional e idempotente.
 import { Injectable } from '@nestjs/common';
 import { Db } from '../../../../db';
+import { asBool, asDate, asJson } from '../../../../shared/db/dialect';
 import { Entitlements, Plan } from '../../domain/plan';
 import {
   ConsumeResult,
@@ -63,7 +64,7 @@ function toPlan(w: PlanRow): Plan {
     code: w.code,
     name: w.name,
     description: w.description,
-    active: w.active,
+    active: asBool(w.active),
     version: w.version,
     priceMinor: w.price_minor,
     currency: w.currency,
@@ -88,11 +89,11 @@ function toSub(r: SubRow): Subscription {
     userId: r.user_id,
     planCode: r.plan_code,
     status: r.status as Subscription['snapshot']['status'],
-    periodStart: r.current_period_start,
-    periodEnd: r.current_period_end,
-    cancelAtPeriodEnd: r.cancel_at_period_end,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    periodStart: asDate(r.current_period_start),
+    periodEnd: asDate(r.current_period_end),
+    cancelAtPeriodEnd: asBool(r.cancel_at_period_end),
+    createdAt: asDate(r.created_at),
+    updatedAt: asDate(r.updated_at),
   });
 }
 
@@ -182,7 +183,7 @@ export class PgUsageRepository implements UsageRepository {
       // Chequeo-y-descuento en una sentencia (atómico ante concurrencia).
       const upd = await client.query(
         `UPDATE usage_periods
-         SET investigations = investigations + $3, tokens = tokens + $4, updated_at = now()
+         SET investigations = investigations + $3, tokens = tokens + $4, updated_at = CURRENT_TIMESTAMP
          WHERE user_id = $1 AND period = $2
            AND investigations + $3 <= $5 AND tokens + $4 <= $6`,
         [event.userId, period, invUnits, tokenUnits, quotaInv, quotaTokens],
@@ -226,14 +227,24 @@ export class PgUsageRepository implements UsageRepository {
         await client.query('ROLLBACK');
         return 'duplicado';
       }
-      await client.query(
-        `INSERT INTO usage_periods AS p (user_id, period, investigations, tokens, updated_at)
-         VALUES ($1, $2, $3, $4, now())
-         ON CONFLICT (user_id, period) DO UPDATE SET
-           investigations = p.investigations + $3,
-           tokens = p.tokens + $4, updated_at = now()`,
-        [event.userId, period, event.units, event.tokensIn + event.tokensOut],
-      );
+      // sqlite no acepta alias en INSERT: sin calificar equivale a la fila actual.
+      const upsertPeriods = this.db.isSqlite
+        ? `INSERT INTO usage_periods (user_id, period, investigations, tokens, updated_at)
+           VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+           ON CONFLICT (user_id, period) DO UPDATE SET
+             investigations = investigations + $3,
+             tokens = tokens + $4, updated_at = CURRENT_TIMESTAMP`
+        : `INSERT INTO usage_periods AS p (user_id, period, investigations, tokens, updated_at)
+           VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+           ON CONFLICT (user_id, period) DO UPDATE SET
+             investigations = p.investigations + $3,
+             tokens = p.tokens + $4, updated_at = CURRENT_TIMESTAMP`;
+      await client.query(upsertPeriods, [
+        event.userId,
+        period,
+        event.units,
+        event.tokensIn + event.tokensOut,
+      ]);
       await client.query('COMMIT');
       return 'ok';
     } catch (e) {
@@ -280,8 +291,8 @@ function toPay(r: PayRow): Payment {
     amountMinor: r.amount_minor,
     currency: r.currency,
     status: r.status as Payment['snapshot']['status'],
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: asDate(r.created_at),
+    updatedAt: asDate(r.updated_at),
   });
 }
 
@@ -408,8 +419,8 @@ export class PgSubscriptionEventRepository implements SubscriptionEventRepositor
       type: w.type,
       fromStatus: w.from_status,
       toStatus: w.to_status,
-      meta: w.meta,
-      createdAt: w.created_at,
+      meta: asJson<Record<string, unknown>>(w.meta, {}),
+      createdAt: asDate(w.created_at),
     }));
   }
 }

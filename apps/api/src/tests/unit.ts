@@ -10,8 +10,8 @@ import {
   SearchHit,
   terminosConsulta,
 } from '../modules/corpus/domain/retrieval';
-import { evaluarSenales } from '../secop/senales';
-import { dictaminar } from '../verify/veredictos';
+import { evaluarSenales } from '../modules/secop/domain/signals';
+import { dictaminar } from '../modules/research/domain/verdict';
 import { balancedJson } from '../shared/json/balanced';
 import { costoTokens } from '../shared/pricing';
 import { escapeLike } from '../shared/sql';
@@ -41,7 +41,7 @@ import { nextReset, periodKey } from '../modules/billing/domain/usage';
 import { SandboxPaymentProvider } from '../modules/billing/infrastructure/payments/sandbox.provider';
 import { DEFAULT_PREFERENCES, parsePreferences } from '../modules/account/domain/preferences';
 import { buildHistory, Conversation } from '../modules/chat/domain/conversation';
-import { formatSse } from '../modules/chat/infrastructure/sse/sse-writer';
+import { formatSse } from '../modules/chat/presentation/sse/sse-writer';
 import { Project, shareActiva } from '../modules/chat/domain/project';
 import { buildConversationMarkdown } from '../modules/chat/domain/export';
 import { resolveModel, SelectionResult } from '../modules/chat/domain/model-selection';
@@ -61,7 +61,12 @@ import {
   PreferencesRepository,
 } from '../modules/account/domain/repositories';
 import { ConversationRepository } from '../modules/chat/domain/repositories';
-import { ChatAgent, parseTitleResponse, withProjectInstructions } from '../modules/chat/application/chat-agent';
+import { ChatAgent } from '../modules/chat/application/chat-agent';
+import { parseTitleResponse } from '../modules/chat/application/generate-title';
+import { withProjectInstructions } from '../modules/chat/application/chat-prompt';
+import { ChatToolRegistry } from '../modules/chat/application/tools/chat-tool.registry';
+import { SearchNormasTool } from '../modules/chat/application/tools/search-norms.tool';
+import { SecopContractsTool } from '../modules/chat/application/tools/secop-contracts.tool';
 import { parseSuggestions } from '../modules/chat/application/chat-suggestions';
 import { ProjectFiles } from '../modules/chat/application/project-files';
 import {
@@ -71,10 +76,23 @@ import {
   quotaError,
   shortenProjectQuery,
 } from '../modules/chat/domain/project-files';
-import { ChatResult, ModelGateway } from '../gateway/model-gateway';
+import { ChatResult, ModelGateway } from '../shared/llm/model-gateway';
 import { SearchDocuments } from '../modules/corpus/application/search-documents';
-import { SecopService } from '../secop/secop.service';
+import { ConsultarContratos } from '../modules/secop';
 import { AppConfig, loadAppConfig } from '../shared/config';
+import {
+  asBool,
+  asDate,
+  asDateOrNull,
+  asJson,
+  asStringArray,
+  cosine,
+  cutoffDays,
+  describeDbError,
+  newUuid,
+  termsForLike,
+  toPositional,
+} from '../shared/db/dialect';
 
 let fails = 0;
 function eq(name: string, a: unknown, b: unknown): void {
@@ -789,11 +807,16 @@ function agenteFalso(gw: FalsaGateway): { agent: ChatAgent; queries: string[] } 
       return { hits: [HIT_ART24], ms: 1 };
     },
   };
+  const registry = new ChatToolRegistry(
+    new SearchNormasTool(
+      search as unknown as SearchDocuments,
+      { search: async (): Promise<never[]> => [] } as unknown as ProjectFiles,
+    ),
+    new SecopContractsTool({} as unknown as ConsultarContratos),
+  );
   const agent = new ChatAgent(
     gw as unknown as ModelGateway,
-    search as unknown as SearchDocuments,
-    {} as unknown as SecopService,
-    { search: async (): Promise<never[]> => [] } as unknown as ProjectFiles,
+    registry,
     { metaModel: 'm-test' } as unknown as AppConfig,
   );
   return { agent, queries };
@@ -921,11 +944,15 @@ async function chatAgente(): Promise<void> {
     };
     const conCtx = new ChatAgent(
       gw as unknown as ModelGateway,
-      {
-        execute: async (): Promise<{ hits: never[]; ms: number }> => ({ hits: [], ms: 1 }),
-      } as unknown as SearchDocuments,
-      {} as unknown as SecopService,
-      pfiles as unknown as ProjectFiles,
+      new ChatToolRegistry(
+        new SearchNormasTool(
+          {
+            execute: async (): Promise<{ hits: never[]; ms: number }> => ({ hits: [], ms: 1 }),
+          } as unknown as SearchDocuments,
+          pfiles as unknown as ProjectFiles,
+        ),
+        new SecopContractsTool({} as unknown as ConsultarContratos),
+      ),
       { metaModel: 'm-test' } as unknown as AppConfig,
     );
     const ev = colector();
@@ -947,7 +974,42 @@ async function chatAgente(): Promise<void> {
     eq('agente pasa fallbacks', gw.calls[0]?.fallbacks, ['m2']);
     eq('agente modelo real', ans.model, 'm-caida');
   }
-  // 9. B7: gateway recorre la cadena (fetch falso): 503→fallback 200.
+  // 9. Estrategias: el registro despacha por nombre y rechaza desconocidas.
+  {
+    const registry = new ChatToolRegistry(
+      new SearchNormasTool(
+        {
+          execute: async (): Promise<{ hits: typeof HIT_ART24[]; ms: number }> => ({
+            hits: [HIT_ART24],
+            ms: 1,
+          }),
+        } as unknown as SearchDocuments,
+        { search: async (): Promise<never[]> => [] } as unknown as ProjectFiles,
+      ),
+      new SecopContractsTool({
+        contratos: async (): Promise<Record<string, unknown>> => ({
+          contratos: [
+            {
+              id_contrato: 'C-1',
+              nombre_entidad: 'Alcaldía',
+              objeto_del_contrato: 'Obra',
+              valor_del_contrato: 100,
+            },
+          ],
+          fecha_consulta: '2026-01-01T00:00:00.000Z',
+          modo: 'test',
+          dataset: 'test',
+        }),
+      } as unknown as ConsultarContratos),
+    );
+    const busqueda = await registry.execute('buscar_normas', '{"q":"art 24","top_k":1}', null);
+    eq('tool registry busca', busqueda.hits[0]?.chunk_id, 'c1');
+    const secop = await registry.execute('consultar_contratos', '{"entidad":"x"}', null);
+    eq('tool registry secop', secop.hits[0]?.secop_ref, 'C-1');
+    const desconocida = await registry.execute('no_existe', '{}', null);
+    eq('tool registry desconocida', desconocida.text.includes('herramienta desconocida'), true);
+  }
+  // 10. B7: gateway recorre la cadena (fetch falso): 503→fallback 200.
   {
     const realFetch = globalThis.fetch;
     const vistos: string[] = [];
@@ -985,7 +1047,7 @@ async function chatAgente(): Promise<void> {
       globalThis.fetch = realFetch;
     }
   }
-  // 10. B7: 400 no hace fallback (no sanaría); cadena agotada lanza.
+  // 11. B7: 400 no hace fallback (no sanaría); cadena agotada lanza.
   {
     const realFetch = globalThis.fetch;
     let llamadas = 0;
@@ -1007,6 +1069,194 @@ async function chatAgente(): Promise<void> {
       }
       eq('gateway 400 lanza', err.includes('Model API 400'), true);
       eq('gateway 400 sin fallback', llamadas, 1);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Meta (EMBED_PROVIDER=meta): POST /embeddings OpenAI, ordena por índice.
+  {
+    const realFetch = globalThis.fetch;
+    let urlVista = '';
+    let modeloVisto = '';
+    let authVista = '';
+    globalThis.fetch = (async (
+      url: unknown,
+      init: { headers?: Record<string, string>; body?: unknown },
+    ): Promise<unknown> => {
+      urlVista = String(url);
+      authVista = init.headers?.Authorization ?? '';
+      const body = JSON.parse(String(init.body)) as { model: string };
+      modeloVisto = body.model;
+      return {
+        ok: true,
+        status: 200,
+        json: async (): Promise<unknown> => ({
+          data: [
+            { embedding: [0.2], index: 1 },
+            { embedding: [0.1], index: 0 },
+          ],
+        }),
+      };
+    }) as unknown as typeof fetch;
+    try {
+      const gw = new ModelGateway({
+        metaBaseUrl: 'http://falso',
+        metaApiKey: 'k',
+        metaModel: 'm-chat',
+        metaEmbedModel: 'm-emb',
+        embedProvider: 'meta',
+      } as unknown as AppConfig);
+      const vecs = await gw.embed(['a', 'b']);
+      eq('embed meta url', urlVista, 'http://falso/embeddings');
+      eq('embed meta modelo', modeloVisto, 'm-emb');
+      eq('embed meta auth', authVista, 'Bearer k');
+      eq('embed meta orden', vecs, [
+        [0.1],
+        [0.2],
+      ]);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Meta: error 4xx lanza sin reintento ni fallback.
+  {
+    const realFetch = globalThis.fetch;
+    let llamadas = 0;
+    globalThis.fetch = (async (): Promise<unknown> => {
+      llamadas++;
+      return { ok: false, status: 400, text: async (): Promise<string> => 'modelo malo' };
+    }) as unknown as typeof fetch;
+    try {
+      const gw = new ModelGateway({
+        metaBaseUrl: 'http://falso',
+        metaApiKey: 'k',
+        metaModel: 'm-chat',
+        embedProvider: 'meta',
+      } as unknown as AppConfig);
+      let err = '';
+      try {
+        await gw.embed(['a']);
+      } catch (e) {
+        err = (e as Error).message;
+      }
+      eq('embed meta 400 lanza', err.includes('Meta embeddings 400'), true);
+      eq('embed meta 400 una llamada', llamadas, 1);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Meta 404: pista de fallback a ollama (endpoint no habilitado).
+  {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (): Promise<unknown> => {
+      return { ok: false, status: 404, text: async (): Promise<string> => '' };
+    }) as unknown as typeof fetch;
+    try {
+      const gw = new ModelGateway({
+        metaBaseUrl: 'http://falso',
+        metaApiKey: 'k',
+        metaModel: 'm-chat',
+        embedProvider: 'meta',
+      } as unknown as AppConfig);
+      let err = '';
+      try {
+        await gw.embed(['a']);
+      } catch (e) {
+        err = (e as Error).message;
+      }
+      eq('embed meta 404 pista ollama', err.includes('EMBED_PROVIDER=ollama'), true);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Gemini: batchEmbedContents con x-goog-api-key, orden del batch.
+  {
+    const realFetch = globalThis.fetch;
+    let urlVista = '';
+    let keyVista = '';
+    let modelosVistos: unknown[] = [];
+    globalThis.fetch = (async (
+      url: unknown,
+      init: { headers?: Record<string, string>; body?: unknown },
+    ): Promise<unknown> => {
+      urlVista = String(url);
+      keyVista = init.headers?.['x-goog-api-key'] ?? '';
+      const body = JSON.parse(String(init.body)) as { requests: Array<{ model: string }> };
+      modelosVistos = body.requests.map((r) => r.model);
+      return {
+        ok: true,
+        status: 200,
+        json: async (): Promise<unknown> => ({
+          embeddings: [{ values: [0.1] }, { values: [0.2] }],
+        }),
+      };
+    }) as unknown as typeof fetch;
+    try {
+      const gw = new ModelGateway({
+        embedProvider: 'gemini',
+        embedBaseUrl: 'http://falso',
+        embedModel: 'm-emb',
+        embedApiKey: 'k-gemini',
+      } as unknown as AppConfig);
+      const vecs = await gw.embed(['a', 'b']);
+      eq('embed gemini url', urlVista, 'http://falso/models/m-emb:batchEmbedContents');
+      eq('embed gemini key', keyVista, 'k-gemini');
+      eq('embed gemini modelos', modelosVistos, ['models/m-emb', 'models/m-emb']);
+      eq('embed gemini vecs', vecs, [[0.1], [0.2]]);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Gemini: error lanza con estado (degrada a FTS aguas arriba).
+  {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (): Promise<unknown> => {
+      return { ok: false, status: 400, text: async (): Promise<string> => 'mala petición' };
+    }) as unknown as typeof fetch;
+    try {
+      const gw = new ModelGateway({
+        embedProvider: 'gemini',
+        embedBaseUrl: 'http://falso',
+        embedModel: 'm-emb',
+        embedApiKey: 'k-gemini',
+      } as unknown as AppConfig);
+      let err = '';
+      try {
+        await gw.embed(['a']);
+      } catch (e) {
+        err = (e as Error).message;
+      }
+      eq('embed gemini 400 lanza', err.includes('Gemini embeddings 400'), true);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+  // Embed Ollama: rama preservada (default y explícito).
+  {
+    const realFetch = globalThis.fetch;
+    const urls: string[] = [];
+    globalThis.fetch = (async (url: unknown): Promise<unknown> => {
+      urls.push(String(url));
+      return {
+        ok: true,
+        status: 200,
+        json: async (): Promise<unknown> => ({ embeddings: [[0.5]] }),
+      };
+    }) as unknown as typeof fetch;
+    try {
+      const gwDefecto = new ModelGateway({
+        ollamaHost: 'http://ol',
+        ollamaModel: 'bge-m3',
+      } as unknown as AppConfig);
+      const v1 = await gwDefecto.embed(['a']);
+      const gwOl = new ModelGateway({
+        ollamaHost: 'http://ol',
+        ollamaModel: 'bge-m3',
+        embedProvider: 'ollama',
+      } as unknown as AppConfig);
+      const v2 = await gwOl.embed(['a']);
+      eq('embed ollama urls', urls, ['http://ol/api/embed', 'http://ol/api/embed']);
+      eq('embed ollama vecs', [v1, v2], [[[0.5]], [[0.5]]]);
     } finally {
       globalThis.fetch = realFetch;
     }
@@ -1245,6 +1495,12 @@ async function chatMemoria(): Promise<void> {
     'APP_BASE_URL',
     'SMTP_URL',
     'REDIS_URL',
+    'EMBED_PROVIDER',
+    'META_MODEL',
+    'META_EMBED_MODEL',
+    'EMBED_BASE_URL',
+    'EMBED_MODEL',
+    'EMBED_API_KEY',
   ];
   const saved = new Map<string, string | undefined>(KEYS.map((k) => [k, process.env[k]] as [string, string | undefined]));
   const restore = (): void => {
@@ -1334,6 +1590,56 @@ async function chatMemoria(): Promise<void> {
     ]);
     restore();
   }
+  {
+    for (const k of KEYS) delete process.env[k];
+    const cfg = loadAppConfig('/tmp/dir-sin-env-lex');
+    eq('embed default ollama', [cfg.embedProvider, cfg.metaEmbedModel], [
+      'ollama',
+      'muse-spark-1.3',
+    ]);
+    restore();
+  }
+  {
+    for (const k of KEYS) delete process.env[k];
+    process.env.EMBED_PROVIDER = 'meta';
+    process.env.META_EMBED_MODEL = 'm-emb';
+    const cfg = loadAppConfig('/tmp/dir-sin-env-lex');
+    eq('embed meta config', [cfg.embedProvider, cfg.metaEmbedModel], ['meta', 'm-emb']);
+    restore();
+  }
+  {
+    for (const k of KEYS) delete process.env[k];
+    process.env.EMBED_PROVIDER = 'foo';
+    let msg = '';
+    try {
+      loadAppConfig('/tmp/dir-sin-env-lex');
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    eq('embed provider inválido', msg.includes('EMBED_PROVIDER'), true);
+    restore();
+  }
+  {
+    for (const k of KEYS) delete process.env[k];
+    process.env.EMBED_PROVIDER = 'gemini';
+    process.env.EMBED_API_KEY = 'k-gemini';
+    let err = '';
+    let got: unknown[] = [];
+    try {
+      const cfg = loadAppConfig('/tmp/dir-sin-env-lex');
+      got = [cfg.embedProvider, cfg.embedModel, cfg.embedBaseUrl, cfg.embedApiKey];
+    } catch (e) {
+      err = (e as Error).message;
+    }
+    eq('embed gemini no lanza', err, '');
+    eq('embed gemini config', got, [
+      'gemini',
+      'gemini-embedding-001',
+      'https://generativelanguage.googleapis.com/v1beta',
+      'k-gemini',
+    ]);
+    restore();
+  }
 }
 
 async function corpusD(): Promise<void> {
@@ -1399,6 +1705,9 @@ async function corpusD(): Promise<void> {
     '2026-10-20',
   ]);
   const { OpsMetricas } = await import('../modules/ops/application/ops-metricas');
+  const { PgOpsMetricsRepository } = await import(
+    '../modules/ops/infrastructure/persistence/pg-ops-metrics.repository'
+  );
   const dbFalsa = {
     raw: {
       query: async (sql: string) => {
@@ -1418,7 +1727,7 @@ async function corpusD(): Promise<void> {
       },
     },
   };
-  const met = await new OpsMetricas(dbFalsa as never).resumen();
+  const met = await new OpsMetricas(new PgOpsMetricsRepository(dbFalsa as never)).resumen();
   eq('ops conteos', [met.usuarios_total, met.usuarios_7d, met.sesiones_activas], [10, 3, 4]);
   eq('ops abstencion/tasa', [met.abstenciones_30d, met.tasa_abstencion_30d], [2, 0.25]);
 
@@ -1433,12 +1742,185 @@ async function corpusD(): Promise<void> {
     jurisdiccion: 'CO',
     tema: 'contratacion_estatal',
   });
+  // Embeddings caídos → solo FTS (el chat no se tumba).
+  {
+    const repoDeg = {
+      structuredByArticle: async () => [],
+      ftsRanked: async () => ['c1'],
+      vectorRanked: async (): Promise<never[]> => {
+        throw new Error('no debe llamarse sin vector');
+      },
+      chunksByIds: async () => [
+        {
+          chunk_id: 'c1',
+          ruta: 'Ley 80/1993 > Art. 24',
+          texto: 'del principio de transparencia',
+          texto_contexto: 'ctx',
+          titulo: 'Ley 80 de 1993',
+          numero: '80/1993',
+          tipo: 'ley',
+          url_original: 'https://x',
+          vigencia: 'vigente',
+          autoridad: 'vinculante',
+          fecha_consulta: null,
+        },
+      ],
+    };
+    const svcDeg = new SearchDocuments(repoDeg as never, {
+      embed: async (): Promise<never> => {
+        throw new Error('Meta embeddings 404:');
+      },
+    } as never);
+    let err = '';
+    let got: unknown[] = [];
+    try {
+      const r = await svcDeg.execute('principio de transparencia en contratacion', { topK: 5 });
+      got = [r.hits.length, r.hits[0]?.chunk_id, r.hits[0]?.metodo];
+    } catch (e) {
+      err = (e as Error).message;
+    }
+    eq('D degrade no lanza', err, '');
+    eq('D degrade hits FTS', got, [1, 'c1', 'hibrido']);
+  }
+  // Ingesta sin embeddings → guarda con embedding null (solo FTS), dims 0.
+  {
+    const { IngestDocument } = await import('../modules/corpus/application/ingest-document');
+    let guardados: Array<{ embedding: unknown }> = [];
+    const repoIng = {
+      findDocumentByHash: async () => null,
+      saveDocumentWithChunks: async (_d: unknown, chunks: Array<{ embedding: unknown }>) => {
+        guardados = chunks;
+        return { docId: 'd1', chunks: chunks.length };
+      },
+    };
+    const ing = new IngestDocument(repoIng as never, {
+      embed: async (): Promise<never> => {
+        throw new Error('Meta embeddings 404:');
+      },
+    } as never);
+    let err = '';
+    let dims = -1;
+    try {
+      const r = await ing.execute({
+        meta: {
+          titulo: 't',
+          emisor: 'e',
+          tipo: 'ley',
+          fecha: null,
+          numero: '1',
+          tema: 't',
+          autoridad: 'vinculante',
+          url_original: 'https://x',
+        },
+        hash: 'h',
+        chunks: [{ ruta: 'r', offset_inicio: 0, offset_fin: 1, texto: 't', texto_contexto: 'c' }],
+      });
+      if (!r.duplicado) dims = r.dims;
+    } catch (e) {
+      err = (e as Error).message;
+    }
+    eq('D ingesta degrade no lanza', err, '');
+    eq('D ingesta dims 0', dims, 0);
+    eq(
+      'D ingesta embedding null',
+      guardados.map((c) => c.embedding),
+      [null],
+    );
+  }
+}
+
+async function projectFilesDegrade(): Promise<void> {
+  // Embeddings caídos → solo FTS en archivos de proyecto (no 503).
+  const projects = { findById: async () => ({ userId: 'u1' }) };
+  const files = {
+    ftsRanked: async () => ['c1'],
+    vectorRanked: async (): Promise<never[]> => {
+      throw new Error('no debe llamarse sin vector');
+    },
+    chunksByIds: async () => [{ chunkId: 'c1', filename: 'a.txt', ruta: 'Art. 1', texto: 'texto' }],
+  };
+  const pf = new ProjectFiles(
+    projects as never,
+    files as never,
+    {
+      embed: async (): Promise<never> => {
+        throw new Error('Meta embeddings 404:');
+      },
+    } as never,
+    {} as never,
+  );
+  let err = '';
+  let got: unknown[] = [];
+  try {
+    const hits = await pf.search('u1', 'p1', 'consulta de prueba', 5);
+    got = [hits.length, hits[0]?.chunk_id];
+  } catch (e) {
+    err = (e as Error).message;
+  }
+  eq('PF degrade no lanza', err, '');
+  eq('PF degrade hits FTS', got, [1, 'c1']);
+}
+
+async function dialecto(): Promise<void> {
+  eq('placeholders $n→?', toPositional('SELECT * FROM t WHERE a = $1 AND b = $2', [1, 2]), { text: 'SELECT * FROM t WHERE a = ? AND b = ?', params: [1, 2] });
+  eq('placeholders respeta strings', toPositional("SELECT '$1' AS x WHERE a = $2", ['a', 'b']), { text: "SELECT '$1' AS x WHERE a = ?", params: ['b'] });
+  eq("placeholders '' escapado", toPositional("SELECT 'o''$1' WHERE a = $2", ['a', 'b']), { text: "SELECT 'o''$1' WHERE a = ?", params: ['b'] });
+  eq('placeholders repetido duplica', toPositional('VALUES ($1,$2,$1)', ['a', 'b']), { text: 'VALUES (?,?,?)', params: ['a', 'b', 'a'] });
+  eq('placeholders desorden reordena', toPositional('VALUES ($2,$1)', ['a', 'b']), { text: 'VALUES (?,?)', params: ['b', 'a'] });
+  let sinParam = '';
+  try {
+    toPositional('VALUES ($3)', ['a']);
+  } catch (e) {
+    sinParam = (e as Error).message;
+  }
+  eq('placeholders sin param falla alto', sinParam.includes('$3'), true);
+  let crudo = '';
+  try {
+    toPositional('SELECT * FROM t WHERE a = ?', ['x']);
+  } catch (e) {
+    crudo = (e as Error).message;
+  }
+  eq('placeholders ? crudo falla alto', crudo.includes('usa $n'), true);
+  const d = new Date('2026-01-02T03:04:05.000Z');
+  eq('asDate Date', asDate(d).toISOString(), '2026-01-02T03:04:05.000Z');
+  eq('asDate string', asDate('2026-01-02T03:04:05.000Z').toISOString(), '2026-01-02T03:04:05.000Z');
+  eq('asDateOrNull null', asDateOrNull(null), null);
+  eq('asDateOrNull string', (asDateOrNull('2026-01-02T03:04:05.000Z') as Date).toISOString(), '2026-01-02T03:04:05.000Z');
+  eq('asJson objeto', asJson({ a: 1 }, {}), { a: 1 });
+  eq('asJson string', asJson('{"a":1}', {}), { a: 1 });
+  eq('asJson roto→fallback', asJson('no-json', { d: 1 }), { d: 1 });
+  eq('asJson null→fallback', asJson(null, []), []);
+  eq('asBool true/1', [asBool(true), asBool(1), asBool('t')], [true, true, true]);
+  eq('asBool false/0', [asBool(false), asBool(0), asBool(null)], [false, false, false]);
+  eq('asStringArray array', asStringArray(['a', 1]), ['a']);
+  eq('asStringArray json', asStringArray('["x","y"]'), ['x', 'y']);
+  eq('asStringArray null', asStringArray(null), []);
+  eq('coseno idénticos', cosine([1, 0], [1, 0]), 1);
+  eq('coseno ortogonales', cosine([1, 0], [0, 1]), 0);
+  eq('coseno vacío', cosine([], [1]), 0);
+  eq('términos like', termsForLike('Ley 80 de 1993, contratación!'), ['ley', '80', '1993', 'contratación']);
+  eq('términos una letra fuera', termsForLike('a de y'), []);
+  eq('cutoff 7d', cutoffDays(7, Date.UTC(2026, 0, 10, 12)), '2026-01-03 12:00:00');
+  eq('uuid formato', /^[0-9a-f-]{36}$/.test(newUuid()), true);
+  eq(
+    'dbError ECONNREFUSED trae pista',
+    describeDbError({ code: 'ECONNREFUSED', message: 'x' }).includes('docker compose up -d db'),
+    true,
+  );
+  eq(
+    'dbError agregado aplana inners',
+    describeDbError({ message: '', errors: [{ message: 'a' }, { message: 'b' }] }),
+    'a | b',
+  );
+  eq('dbError conserva mensaje pg', describeDbError(new Error('connect ECONNREFUSED 127.0.0.1:5433')).includes('ECONNREFUSED'), true);
 }
 
 identidadCripto()
   .then(() => chatAgente())
   .then(() => chatMemoria())
   .then(() => corpusD())
+  .then(() => projectFilesDegrade())
+  .then(() => dialecto())
   .then(() => {
   if (fails) {
     console.log(`${fails} unitaria(s) rota(s)`);

@@ -11,6 +11,7 @@ import {
   PREFERENCES_REPOSITORY,
   PreferencesRepository,
 } from '../domain/repositories';
+import { MemoryForAgentPort } from './ports';
 
 function pub(m: MemoryEntry): Record<string, unknown> {
   return { id: m.id, fact: m.fact, created_at: m.createdAt.toISOString() };
@@ -55,9 +56,9 @@ export class Memories {
   }
 }
 
-/** Puerto para el chat (mirror de BillingForAgent): respeta el opt-in. */
+/** Adaptador del puerto de memoria para el chat; respeta el opt-in. */
 @Injectable()
-export class MemoryForAgent {
+export class MemoryForAgent implements MemoryForAgentPort {
   constructor(
     @Inject(MEMORY_REPOSITORY) private readonly mems: MemoryRepository,
     @Inject(PREFERENCES_REPOSITORY) private readonly prefs: PreferencesRepository,

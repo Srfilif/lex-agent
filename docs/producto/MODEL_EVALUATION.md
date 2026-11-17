@@ -12,7 +12,7 @@
 |---|---|---|
 | Razonamiento principal | muse-spark-1.3 (Standard) | **Humo OK 2026-10-26.** Ojo: respuesta trivial consumió 265 tokens completion (251 de razonamiento). Usar `max_tokens` ≥ 500–1000 y medir costo real |
 | Tareas baratas (clasificación, metadatos) | muse-spark-1.3-contributor **solo con datos públicos** | Decisión sujeta a Q6 |
-| Embeddings | bge-m3 local (Ollama), 1024 dims verificados | **Cerrado Día 2:** CPU-OK, ~1.2 GB, coincide con `vector(1024)` |
+| Embeddings | `gemini-embedding-001` (3072 dims, batch OK 2026-11-04); bge-m3 local 1024; Meta `/embeddings` = 404 (Q1) | **2026-11-04:** proveedor dedicado `EMBED_*` + mig 018 (`vector(3072)`) + degradación a solo-FTS sin vectores |
 | Reranking | Sin evidencia | Pendiente; alternativa: cross-encoder abierto o solo RRF |
 | OCR/visión | Muse Spark describe soporte multimodal (R1) | Pendiente de prueba; no necesario en MVP |
 | Herramientas | Verificado: `tool_choice: auto` emite `tool_calls` correctos; forzado → 400 | **Cerrado:** bucle propio + validación JSON; prompt fuerte en vez de forzar |

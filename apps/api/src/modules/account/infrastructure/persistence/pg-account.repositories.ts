@@ -1,6 +1,7 @@
 // Repositorios pg del módulo account.
 import { Injectable } from '@nestjs/common';
 import { Db } from '../../../../db';
+import { asBool, asDate, asDateOrNull, asJson } from '../../../../shared/db/dialect';
 import {
   AccountPrivacyRepository,
   DeletionSummary,
@@ -18,14 +19,15 @@ export class PgPreferencesRepository implements PreferencesRepository {
       userId,
     ]);
     if (!r.rowCount) return {};
-    return (r.rows[0] as { data: Record<string, unknown> }).data ?? {};
+    const row = r.rows[0] as { data: unknown };
+    return asJson<Record<string, unknown>>(row.data, {});
   }
 
   async save(userId: string, data: Record<string, unknown>): Promise<void> {
     await this.db.raw.query(
       `INSERT INTO user_preferences (user_id, data, updated_at)
-       VALUES ($1, $2, now())
-       ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
       [userId, JSON.stringify(data)],
     );
   }
@@ -43,7 +45,7 @@ export class PgMemoryRepository implements MemoryRepository {
     return (r.rows as Array<{ id: string; fact: string; created_at: Date }>).map((m) => ({
       id: m.id,
       fact: m.fact,
-      createdAt: m.created_at,
+      createdAt: asDate(m.created_at),
     }));
   }
 
@@ -54,7 +56,7 @@ export class PgMemoryRepository implements MemoryRepository {
       [userId, fact],
     );
     const m = r.rows[0] as { id: string; fact: string; created_at: Date };
-    return { id: m.id, fact: m.fact, createdAt: m.created_at };
+    return { id: m.id, fact: m.fact, createdAt: asDate(m.created_at) };
   }
 
   async remove(userId: string, id: string): Promise<boolean> {
@@ -66,7 +68,7 @@ export class PgMemoryRepository implements MemoryRepository {
   }
 
   async count(userId: string): Promise<number> {
-    const r = await this.db.raw.query('SELECT count(*)::int AS n FROM user_memories WHERE user_id = $1', [
+    const r = await this.db.raw.query('SELECT CAST(count(*) AS INTEGER) AS n FROM user_memories WHERE user_id = $1', [
       userId,
     ]);
     return (r.rows[0] as { n: number }).n;
@@ -99,7 +101,8 @@ export class PgAccountPrivacyRepository implements AccountPrivacyRepository {
       userId,
     ]);
     if (!r.rowCount) return null;
-    return (r.rows[0] as { deletion_requested_at: Date | null }).deletion_requested_at;
+    const row = r.rows[0] as { deletion_requested_at: Date | null };
+    return asDateOrNull(row.deletion_requested_at);
   }
 
   async clearDeletionRequested(userId: string): Promise<void> {
@@ -132,18 +135,33 @@ export class PgAccountPrivacyRepository implements AccountPrivacyRepository {
          WHERE user_id = $1 ORDER BY created_at DESC LIMIT 200`),
       q('SELECT id, fact, created_at FROM user_memories WHERE user_id = $1 ORDER BY created_at'),
     ]);
+    // En sqlite los booleanos llegan como 0/1 y los JSON como string: normalizar.
+    const fix = (row: Record<string, unknown>): Record<string, unknown> => {
+      const r = { ...row };
+      for (const k of ['verified', 'success', 'active', 'cancel_at_period_end', 'mfa_ok']) {
+        if (k in r) r[k] = asBool(r[k]);
+      }
+      for (const k of ['data', 'meta', 'payload', 'traza', 'respuesta', 'usage', 'citations']) {
+        if (typeof r[k] === 'string') r[k] = asJson(r[k], r[k]);
+      }
+      return r;
+    };
+    const fixAll = (rows: Record<string, unknown>[]): Record<string, unknown>[] => rows.map(fix);
     return {
-      user: u.rows[0] ?? null,
-      preferences: (prefs.rows[0] as { data?: unknown } | undefined)?.data ?? {},
-      sessions: sessions.rows,
-      totp: totp.rows[0] ?? { status: 'disabled' },
-      subscriptions: subs.rows,
-      subscription_events: subEvents.rows,
-      payments: pays.rows,
-      usage_events: usage.rows,
-      security_events: events.rows,
-      investigaciones: invs.rows,
-      memories: mems.rows,
+      user: u.rows[0] ? fix(u.rows[0] as Record<string, unknown>) : null,
+      preferences: asJson<Record<string, unknown>>(
+        (prefs.rows[0] as { data?: unknown } | undefined)?.data,
+        {},
+      ),
+      sessions: fixAll(sessions.rows),
+      totp: totp.rows[0] ? fix(totp.rows[0] as Record<string, unknown>) : { status: 'disabled' },
+      subscriptions: fixAll(subs.rows),
+      subscription_events: fixAll(subEvents.rows),
+      payments: fixAll(pays.rows),
+      usage_events: fixAll(usage.rows),
+      security_events: fixAll(events.rows),
+      investigaciones: fixAll(invs.rows),
+      memories: fixAll(mems.rows),
     };
   }
 
@@ -191,8 +209,11 @@ export class PgAccountPrivacyRepository implements AccountPrivacyRepository {
       ]);
       // 6. Webhooks: quitar user_id del payload (Fase F deuda).
       const wh = await client.query(
-        `UPDATE webhook_events SET payload = payload #- '{metadata,user_id}'
-         WHERE payload->'metadata'->>'user_id' = $1`,
+        this.db.isSqlite
+          ? `UPDATE webhook_events SET payload = json_remove(payload, '$.metadata.user_id')
+             WHERE json_extract(payload, '$.metadata.user_id') = $1`
+          : `UPDATE webhook_events SET payload = payload #- '{metadata,user_id}'
+             WHERE payload->'metadata'->>'user_id' = $1`,
         [userId],
       );
       // 7. Investigaciones desvinculadas (se conservan anónimas).

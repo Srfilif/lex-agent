@@ -65,7 +65,8 @@ export interface NuevoChunk {
   offset_fin: number;
   texto: string;
   texto_contexto: string;
-  embedding: number[];
+  /** null = ingesta degradada (solo FTS, sin vector). */
+  embedding: number[] | null;
 }
 
 export interface CorpusRepository {

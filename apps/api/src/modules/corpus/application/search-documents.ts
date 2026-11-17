@@ -49,11 +49,17 @@ export class SearchDocuments {
 
     if (hits.length < topK) {
       const need = topK - hits.length + 5; // margen para dedup
-      const [vecs] = await Promise.all([this.embeddings.embed([q])]);
-      const [ftsIds, vecIds] = await Promise.all([
-        this.repo.ftsRanked(q, filtros, 20),
-        this.repo.vectorRanked(vecs[0], filtros, 20),
-      ]);
+      // Embeddings caídos (API 404, Ollama apagado) → solo FTS, sin tumbar el chat.
+      const ftsP = this.repo.ftsRanked(q, filtros, 20);
+      const vecP = this.embeddings
+        .embed([q])
+        .then(([v]) => this.repo.vectorRanked(v, filtros, 20))
+        .catch((e: Error): string[] => {
+          // eslint-disable-next-line no-console
+          console.warn(`[corpus] embeddings no disponibles, solo FTS: ${e.message}`);
+          return [];
+        });
+      const [ftsIds, vecIds] = await Promise.all([ftsP, vecP]);
       const ranked = fuseRrf(ftsIds, vecIds, new Set(hits.map((h) => h.chunk_id)), need);
       if (ranked.length) {
         const rows = await this.repo.chunksByIds(ranked.map((r) => r.id));

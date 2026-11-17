@@ -26,9 +26,17 @@ export class IngestDocument {
     const dup = await this.repo.findDocumentByHash(input.hash);
     if (dup) return { duplicado: true, id: dup.id, titulo: dup.titulo };
     input.onProgress?.(`Embebiendo ${input.chunks.length} chunks...`);
-    const vecs = await this.embeddings.embed(
-      input.chunks.map((c) => `${c.texto_contexto}\n${c.texto}`.slice(0, 8000)),
-    );
+    // Embeddings caídos → ingesta degradada (embedding null, solo FTS).
+    // Nota: el hash ya quedó registrado; re-embeder exige borrar el doc y re-ingerir.
+    let vecs: number[][] | null = null;
+    try {
+      vecs = await this.embeddings.embed(
+        input.chunks.map((c) => `${c.texto_contexto}\n${c.texto}`.slice(0, 8000)),
+      );
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`[ingesta] embeddings no disponibles, solo FTS: ${(e as Error).message}`);
+    }
     const saved = await this.repo.saveDocumentWithChunks(
       { ...input.meta, hash: input.hash },
       input.chunks.map((c, i) => ({
@@ -37,9 +45,9 @@ export class IngestDocument {
         offset_fin: c.offset_fin,
         texto: c.texto,
         texto_contexto: c.texto_contexto,
-        embedding: vecs[i],
+        embedding: vecs?.[i] ?? null,
       })),
     );
-    return { duplicado: false, docId: saved.docId, chunks: saved.chunks, dims: vecs[0]?.length ?? 0 };
+    return { duplicado: false, docId: saved.docId, chunks: saved.chunks, dims: vecs?.[0]?.length ?? 0 };
   }
 }

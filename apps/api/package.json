@@ -10,8 +10,11 @@
     "ingest": "ts-node src/ingest/run.ts",
     "test": "ts-node src/tests/db-regression.ts",
     "test:unit": "ts-node src/tests/unit.ts",
-    "sync:secop": "ts-node src/secop/sync.ts",
+    "test:architecture": "ts-node src/tests/architecture.ts",
+    "sync:secop": "ts-node src/modules/secop/infrastructure/sync.ts",
     "migrate": "ts-node src/migrations/run.ts",
+    "seed": "ts-node src/migrations/seed.ts",
+    "test:sqlite": "ts-node src/tests/db-sqlite.ts",
     "purge": "ts-node src/migrations/purge.ts",
     "make:admin": "ts-node src/migrations/make-admin.ts"
   },

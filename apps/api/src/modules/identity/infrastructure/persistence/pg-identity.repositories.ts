@@ -1,6 +1,7 @@
 // Repositorios pg de identidad. SQL parametrizado; fechas TIMESTAMPTZ↔Date.
 import { Injectable } from '@nestjs/common';
 import { Db } from '../../../../db';
+import { asBool, asDate, asDateOrNull } from '../../../../shared/db/dialect';
 import { escapeLike } from '../../../../shared/sql';
 import {
   NewSecurityEvent,
@@ -41,11 +42,11 @@ function toUser(r: UserRow): User {
     email: r.email,
     displayName: r.display_name,
     passwordHash: r.password_hash,
-    emailVerifiedAt: r.email_verified_at,
+    emailVerifiedAt: asDateOrNull(r.email_verified_at),
     status: r.status as UserProps['status'],
     role: r.role as UserProps['role'],
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: asDate(r.created_at),
+    updatedAt: asDate(r.updated_at),
   };
   return User.rehydrate(props);
 }
@@ -87,6 +88,12 @@ export class PgUserRepository implements UserRepository {
 
   private searchClause(search: string): { clause: string; params: unknown[] } {
     if (!search) return { clause: '', params: [] };
+    if (this.db.isSqlite) {
+      return {
+        clause: 'WHERE LOWER(email) LIKE LOWER($1)',
+        params: [`%${escapeLike(search)}%`],
+      };
+    }
     return { clause: 'WHERE email ILIKE $1', params: [`%${escapeLike(search)}%`] };
   }
 
@@ -103,7 +110,10 @@ export class PgUserRepository implements UserRepository {
 
   async count(search: string): Promise<number> {
     const { clause, params } = this.searchClause(search);
-    const r = await this.db.raw.query(`SELECT count(*)::int AS n FROM users ${clause}`, params);
+    const r = await this.db.raw.query(
+      `SELECT CAST(count(*) AS INTEGER) AS n FROM users ${clause}`,
+      params,
+    );
     return (r.rows[0] as { n: number }).n;
   }
 }
@@ -132,15 +142,15 @@ function toSession(r: SessionRow): AuthSession {
     refreshHash: r.refresh_hash,
     family: r.family,
     prevHash: r.prev_hash,
-    createdAt: r.created_at,
-    lastSeenAt: r.last_seen_at,
-    expiresAt: r.expires_at,
-    revokedAt: r.revoked_at,
+    createdAt: asDate(r.created_at),
+    lastSeenAt: asDate(r.last_seen_at),
+    expiresAt: asDate(r.expires_at),
+    revokedAt: asDateOrNull(r.revoked_at),
     revokeReason: r.revoke_reason,
     deviceLabel: r.device_label,
     userAgent: r.user_agent,
     ip: r.ip,
-    mfaOk: r.mfa_ok,
+    mfaOk: asBool(r.mfa_ok),
   });
 }
 
@@ -277,8 +287,8 @@ export class PgOneTimeTokenRepository implements OneTimeTokenRepository {
       kind: w.kind as OneTimeTokenKind,
       tokenHash: w.token_hash,
       newEmail: w.new_email,
-      expiresAt: w.expires_at,
-      consumedAt: w.consumed_at,
+      expiresAt: asDate(w.expires_at),
+      consumedAt: asDateOrNull(w.consumed_at),
     };
   }
 
@@ -309,8 +319,8 @@ function toTotp(r: TotpRow): TotpConfig {
     secretEnc: r.secret_enc,
     status: r.status as 'pending' | 'active',
     lastCounter: Number(r.last_counter),
-    createdAt: r.created_at,
-    confirmedAt: r.confirmed_at,
+    createdAt: asDate(r.created_at),
+    confirmedAt: asDateOrNull(r.confirmed_at),
   });
 }
 
@@ -386,7 +396,7 @@ export class PgRecoveryCodeRepository implements RecoveryCodeRepository {
     ]);
     if (!r.rowCount) return null;
     const w = r.rows[0] as RecRow;
-    return { id: w.id, userId: w.user_id, usedAt: w.used_at };
+    return { id: w.id, userId: w.user_id, usedAt: asDateOrNull(w.used_at) };
   }
 
   async markUsed(id: string, now: Date): Promise<boolean> {
@@ -399,7 +409,7 @@ export class PgRecoveryCodeRepository implements RecoveryCodeRepository {
 
   async countLeft(userId: string): Promise<number> {
     const r = await this.db.raw.query(
-      'SELECT count(*)::int AS n FROM recovery_codes WHERE user_id = $1 AND used_at IS NULL',
+      'SELECT CAST(count(*) AS INTEGER) AS n FROM recovery_codes WHERE user_id = $1 AND used_at IS NULL',
       [userId],
     );
     return (r.rows[0] as { n: number }).n;

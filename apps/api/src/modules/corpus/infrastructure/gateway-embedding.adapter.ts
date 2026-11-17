@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ModelGateway } from '../../../gateway/model-gateway';
+import { ModelGateway } from '../../../shared/llm/model-gateway';
 import { EmbeddingPort } from '../application/ports';
 
 // Adaptador: expone el gateway compartido tras el puerto que pide el caso de uso.

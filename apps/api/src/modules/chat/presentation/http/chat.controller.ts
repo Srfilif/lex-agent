@@ -26,14 +26,15 @@ import {
   AuthUser,
   CurrentUser,
 } from '../../../identity';
-import { GenerateTitle, SendChatMessage } from '../../application/chat-agent';
+import { SendChatMessage } from '../../application/send-chat-message';
+import { GenerateTitle } from '../../application/generate-title';
 import { ChatModels } from '../../application/chat-models';
 import { ChatSuggestions } from '../../application/chat-suggestions';
 import { Conversations } from '../../application/conversations';
 import { Projects } from '../../application/projects';
 import { ProjectFiles } from '../../application/project-files';
 import { MAX_FILE_BYTES } from '../../domain/project-files';
-import { SseResponse, SseWriter } from '../../infrastructure/sse/sse-writer';
+import { SseResponse, SseWriter } from '../sse/sse-writer';
 import {
   CreateConversationDto,
   CreateProjectDto,

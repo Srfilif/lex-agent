@@ -1,9 +1,17 @@
 // Webhooks de proveedor: cuerpo crudo + firma (HMAC sandbox).
 // Requiere rawBody (main.ts). Sin auth de usuario: la firma es la auth.
-import { BadRequestException, Controller, Param, Post, Req, UseFilters } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Inject,
+  Param,
+  Post,
+  Req,
+  UseFilters,
+} from '@nestjs/common';
 import { AuthErrorFilter, RequestMeta } from '../../../identity';
 import { HandleWebhook } from '../../application/handle-webhook';
-import { SANDBOX_SIGNATURE_HEADER } from '../../infrastructure/payments/sandbox.provider';
+import { PAYMENT_PROVIDER, PaymentProvider } from '../../application/ports';
 
 interface RawReq {
   headers: Record<string, string | string[] | undefined>;
@@ -31,7 +39,10 @@ function header(req: RawReq, k: string): string {
 @Controller('billing/webhooks')
 @UseFilters(AuthErrorFilter)
 export class WebhooksController {
-  constructor(private readonly handle: HandleWebhook) {}
+  constructor(
+    private readonly handle: HandleWebhook,
+    @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
+  ) {}
 
   @Post(':provider')
   async webhookPost(
@@ -44,7 +55,7 @@ export class WebhooksController {
       throw new BadRequestException('cuerpo inválido');
     }
     const sigHeader =
-      provider === 'sandbox' ? SANDBOX_SIGNATURE_HEADER : 'x-provider-signature';
+      provider === this.provider.name ? this.provider.signatureHeader : 'x-provider-signature';
     return this.handle.execute(
       provider.trim().toLowerCase().slice(0, 20),
       raw,

@@ -1,12 +1,12 @@
 // B7: catálogo efectivo de modelos de chat para el plan del usuario.
 import { Inject, Injectable } from '@nestjs/common';
 import { AppConfig, CONFIG } from '../../../shared/config';
-import { BillingForAgent } from '../../billing';
+import { AGENT_BILLING, AgentBillingPort } from '../../billing';
 
 @Injectable()
 export class ChatModels {
   constructor(
-    private readonly billing: BillingForAgent,
+    @Inject(AGENT_BILLING) private readonly billing: AgentBillingPort,
     @Inject(CONFIG) private readonly cfg: AppConfig,
   ) {}
 

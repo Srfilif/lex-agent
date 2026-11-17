@@ -1,6 +1,6 @@
 // Configuración centralizada y validada (único lector de process.env).
 // Falla rápido al arrancar ante formatos inválidos. Sin nuevas dependencias.
-import { dirname, join, resolve } from 'path';
+import { dirname, isAbsolute, join, resolve } from 'path';
 import { existsSync } from 'fs';
 import { loadDotenv } from './dotenv';
 
@@ -48,6 +48,10 @@ export interface AppConfig {
   smtpFrom: string;
   port: number;
   databaseUrl: string;
+  /** Motor de DB: postgres (prod/docker) o sqlite (dev local sin Postgres). */
+  databaseProvider: 'postgres' | 'sqlite';
+  /** Ruta del fichero sqlite (solo si databaseProvider=sqlite). */
+  sqlitePath: string;
   metaBaseUrl: string;
   metaModel: string;
   /** B7: catálogo de modelos de chat verificados (`CHAT_MODELS`, csv). */
@@ -61,6 +65,16 @@ export interface AppConfig {
   metaApiKey: string;
   ollamaHost: string;
   ollamaModel: string;
+  /** Proveedor de embeddings: meta, ollama local o gemini (key propia). */
+  embedProvider: 'meta' | 'ollama' | 'gemini';
+  /** Modelo de embeddings Meta (`META_EMBED_MODEL`); vacío = META_MODEL. */
+  metaEmbedModel: string;
+  /** Base del proveedor dedicado de embeddings (`EMBED_BASE_URL`, gemini). */
+  embedBaseUrl: string;
+  /** Modelo del proveedor dedicado (`EMBED_MODEL`, default gemini-embedding-001). */
+  embedModel: string;
+  /** Key del proveedor dedicado (`EMBED_API_KEY`, solo embeddings). */
+  embedApiKey: string;
   secopAppToken: string;
   /** Directorio de originales de archivos de proyecto (B6). Se crea si falta. */
   projectFilesDir: string;
@@ -93,6 +107,29 @@ function port(v: string | undefined): number {
     throw new Error(`Config inválida: PORT debe ser 1-65535, recibido: ${v}`);
   }
   return n;
+}
+
+// SQLITE_PATH relativo se ancla al dir del .env: migrate/seed/dev abren el
+// mismo fichero se corran desde la raíz o desde apps/api.
+function resolveSqlite(p: string, envDir: string | null): string {
+  if (!envDir || isAbsolute(p)) return p;
+  return join(envDir, p);
+}
+
+function dbProvider(v: string | undefined): 'postgres' | 'sqlite' {
+  const p = str(v, 'postgres').toLowerCase();
+  if (p !== 'postgres' && p !== 'sqlite') {
+    throw new Error(`Config inválida: DATABASE_PROVIDER debe ser postgres|sqlite, recibido: ${v}`);
+  }
+  return p;
+}
+
+function embedProvider(v: string | undefined): 'meta' | 'ollama' | 'gemini' {
+  const p = str(v, 'ollama').toLowerCase();
+  if (p !== 'meta' && p !== 'ollama' && p !== 'gemini') {
+    throw new Error(`Config inválida: EMBED_PROVIDER debe ser meta|ollama|gemini, recibido: ${v}`);
+  }
+  return p;
 }
 
 /** B7: csv → lista única no vacía; el modelo por defecto siempre va primero. */
@@ -253,6 +290,8 @@ export function loadAppConfig(fromDir: string = __dirname): AppConfig {
     smtpFrom: str(e.SMTP_FROM, 'LexAgent <no-reply@lex.local>'),
     port: port(e.PORT),
     databaseUrl: str(e.DATABASE_URL, 'postgres://lex:lexdev@localhost:5433/lexdb'),
+    databaseProvider: dbProvider(e.DATABASE_PROVIDER),
+    sqlitePath: resolveSqlite(str(e.SQLITE_PATH, 'data/lexdb.sqlite'), root),
     metaBaseUrl: url(e.META_BASE_URL, 'https://api.meta.ai/v1', 'META_BASE_URL'),
     metaModel: str(e.META_MODEL, 'muse-spark-1.3'),
     // B7: verificados con chat real 2026-10-27 (wonder-1.0, spark-1.2/1.3).
@@ -266,6 +305,15 @@ export function loadAppConfig(fromDir: string = __dirname): AppConfig {
     metaApiKey: str(e.META_API_KEY, ''),
     ollamaHost: url(e.OLLAMA_HOST, 'http://localhost:11434', 'OLLAMA_HOST'),
     ollamaModel: str(e.OLLAMA_MODEL, 'bge-m3'),
+    embedProvider: embedProvider(e.EMBED_PROVIDER),
+    metaEmbedModel: str(e.META_EMBED_MODEL, '') || str(e.META_MODEL, 'muse-spark-1.3'),
+    embedBaseUrl: url(
+      e.EMBED_BASE_URL,
+      'https://generativelanguage.googleapis.com/v1beta',
+      'EMBED_BASE_URL',
+    ),
+    embedModel: str(e.EMBED_MODEL, 'gemini-embedding-001'),
+    embedApiKey: str(e.EMBED_API_KEY, ''),
     secopAppToken: str(e.SECOP_APP_TOKEN, ''),
     projectFilesDir: str(e.PROJECT_FILES_DIR, 'data/project-files'),
     auth: auth(e, nodeEnv),

@@ -15,7 +15,7 @@ import { AdminGrantPlan } from './application/admin-grant';
 import { BillingForAgent } from './application/billing-for-agent';
 import { EffectivePlanResolver } from './application/effective-plan';
 import { HandleWebhook } from './application/handle-webhook';
-import { PAYMENT_PROVIDER } from './application/ports';
+import { AGENT_BILLING, PAYMENT_PROVIDER } from './application/ports';
 import { GetEntitlements, GetPlans, GetSubscriptionStatus, GetUsage } from './application/reads';
 import { SandboxSimulator } from './application/sandbox-simulator';
 import { StartCheckout } from './application/start-checkout';
@@ -61,6 +61,7 @@ import { WebhooksController } from './presentation/http/webhooks.controller';
     GetUsage,
     GetEntitlements,
     BillingForAgent,
+    { provide: AGENT_BILLING, useExisting: BillingForAgent },
     AdminGrantPlan,
     StartCheckout,
     HandleWebhook,
@@ -71,6 +72,6 @@ import { WebhooksController } from './presentation/http/webhooks.controller';
     GetPayments,
     GetSubscriptionHistory,
   ],
-  exports: [BillingForAgent, EffectivePlanResolver],
+  exports: [AGENT_BILLING, BillingForAgent, EffectivePlanResolver],
 })
 export class BillingModule {}

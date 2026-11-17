@@ -14,6 +14,7 @@ import {
   ShareRepository,
 } from '../../domain/repositories';
 import { ProjectProps, ShareLinkProps } from '../../domain/project';
+import { asDate, asDateOrNull, asJson, asStringArray } from '../../../../shared/db/dialect';
 import { escapeLike } from '../../../../shared/sql';
 
 interface ConvRow {
@@ -100,12 +101,12 @@ function toConv(r: ConvRow): ConversationProps {
     userId: r.user_id,
     title: r.title,
     projectId: r.project_id,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    archivedAt: r.archived_at,
+    createdAt: asDate(r.created_at),
+    updatedAt: asDate(r.updated_at),
+    archivedAt: asDateOrNull(r.archived_at),
     summary: r.summary,
     summaryCount: r.summary_count ?? 0,
-    topics: r.topics ?? [],
+    topics: asStringArray(r.topics),
   };
 }
 
@@ -153,7 +154,7 @@ export class PgMessageRepository implements MessageRepository {
 
   async countByConversation(conversationId: string): Promise<number> {
     const r = await this.db.raw.query(
-      'SELECT count(*)::int AS n FROM messages WHERE conversation_id = $1',
+      'SELECT CAST(count(*) AS INTEGER) AS n FROM messages WHERE conversation_id = $1',
       [conversationId],
     );
     return (r.rows[0] as { n: number }).n;
@@ -179,13 +180,17 @@ export class PgMessageRepository implements MessageRepository {
   > {
     const lim = Math.min(Math.max(Math.trunc(limit) || 20, 1), 50);
     // Fragmento centrado en la coincidencia (~60 chars antes, 240 total).
+    const snippetExpr = this.db.isSqlite
+      ? 'substr(m.content, max(instr(lower(m.content), lower($2)) - 60, 1), 240) AS snippet'
+      : `substring(m.content from greatest(position(lower($2) in lower(m.content)) - 60, 1) for 240) AS snippet`;
+    const matchOp = this.db.isSqlite ? 'LIKE' : 'ILIKE';
     const r = await this.db.raw.query(
       `SELECT m.id AS message_id, m.conversation_id, c.title, m.role, m.created_at,
-       substring(m.content from greatest(position(lower($2) in lower(m.content)) - 60, 1) for 240) AS snippet
+       ${snippetExpr}
        FROM messages m JOIN conversations c ON c.id = m.conversation_id
-       WHERE c.user_id = $1 AND m.content ILIKE '%' || $3 || '%' ESCAPE '\\'
+       WHERE c.user_id = $1 AND ${this.db.isSqlite ? 'LOWER(m.content)' : 'm.content'} ${matchOp} '%' || $3 || '%' ESCAPE '\\'
        ORDER BY m.created_at DESC LIMIT ${lim}`,
-      [userId, q, escapeLike(q)],
+      [userId, q, this.db.isSqlite ? escapeLike(q).toLowerCase() : escapeLike(q)],
     );
     return (r.rows as Array<Record<string, string | Date>>).map((row) => ({
       messageId: String(row['message_id']),
@@ -193,7 +198,7 @@ export class PgMessageRepository implements MessageRepository {
       title: String(row['title']),
       role: String(row['role']),
       snippet: String(row['snippet']),
-      createdAt: row['created_at'] as Date,
+      createdAt: asDate(row['created_at']),
     }));
   }
 }
@@ -204,11 +209,11 @@ function toMsg(r: MsgRow): MessageProps {
     conversationId: r.conversation_id,
     role: r.role as MessageRole,
     content: r.content,
-    citations: Array.isArray(r.citations) ? r.citations : [],
-    usage: r.usage,
+    citations: asJson<Citation[]>(r.citations, []),
+    usage: asJson<MessageProps['usage']>(r.usage, null),
     costUsd: r.cost_usd === null ? null : Number(r.cost_usd),
     model: r.model,
-    createdAt: r.created_at,
+    createdAt: asDate(r.created_at),
   };
 }
 
@@ -228,8 +233,8 @@ function toProj(r: ProjRow): ProjectProps {
     userId: r.user_id,
     name: r.name,
     instructions: r.instructions,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: asDate(r.created_at),
+    updatedAt: asDate(r.updated_at),
   };
 }
 
@@ -254,7 +259,7 @@ export class PgProjectRepository implements ProjectRepository {
 
   async listByUser(userId: string): Promise<Array<ProjectProps & { conversationCount: number }>> {
     const r = await this.db.raw.query(
-      `SELECT p.*, count(c.id)::int AS conversation_count FROM projects p
+      `SELECT p.*, CAST(count(c.id) AS INTEGER) AS conversation_count FROM projects p
        LEFT JOIN conversations c ON c.project_id = p.id AND c.archived_at IS NULL
        WHERE p.user_id = $1 GROUP BY p.id ORDER BY p.updated_at DESC`,
       [userId],
@@ -290,8 +295,8 @@ function toShare(r: ShareRow): ShareLinkProps {
     id: r.id,
     conversationId: r.conversation_id,
     token: r.token,
-    createdAt: r.created_at,
-    revokedAt: r.revoked_at,
+    createdAt: asDate(r.created_at),
+    revokedAt: asDateOrNull(r.revoked_at),
   };
 }
 

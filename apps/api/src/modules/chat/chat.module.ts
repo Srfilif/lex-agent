@@ -5,7 +5,7 @@ import { CorpusModule } from '../corpus';
 import { IdentityModule } from '../identity';
 import { BillingModule } from '../billing';
 import { AccountModule } from '../account';
-import { SecopModule } from '../../secop/secop.module';
+import { SecopModule } from '../secop';
 import {
   CONVERSATION_REPOSITORY,
   MESSAGE_REPOSITORY,
@@ -13,7 +13,12 @@ import {
   PROJECT_REPOSITORY,
   SHARE_REPOSITORY,
 } from './domain/repositories';
-import { ChatAgent, GenerateTitle, SendChatMessage } from './application/chat-agent';
+import { ChatAgent } from './application/chat-agent';
+import { SendChatMessage } from './application/send-chat-message';
+import { GenerateTitle } from './application/generate-title';
+import { ChatToolRegistry } from './application/tools/chat-tool.registry';
+import { SearchNormasTool } from './application/tools/search-norms.tool';
+import { SecopContractsTool } from './application/tools/secop-contracts.tool';
 import { ChatModels } from './application/chat-models';
 import { ChatSuggestions } from './application/chat-suggestions';
 import { ThreadSummarizer } from './application/thread-summarizer';
@@ -46,6 +51,9 @@ import { SharedChatController } from './presentation/http/shared.controller';
     Projects,
     ProjectFiles,
     ChatAgent,
+    ChatToolRegistry,
+    SearchNormasTool,
+    SecopContractsTool,
     SendChatMessage,
     GenerateTitle,
     ChatModels,

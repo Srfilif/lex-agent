@@ -31,11 +31,52 @@ export interface ProviderEvent {
 
 export interface PaymentProvider {
   readonly name: string;
+  /** Cabecera HTTP donde llega la firma del webhook. */
+  readonly signatureHeader: string;
   createCheckout(r: CheckoutRequest): Promise<CheckoutResult>;
   /** HMAC/firma oficial del proveedor sobre el cuerpo crudo. */
   verifyWebhook(rawBody: Buffer, signature: string): boolean;
   /** Valida forma del evento (lanza 400 si malformado). */
   parseEvent(payload: unknown): ProviderEvent;
+}
+
+/** Contrato de facturación publicado a chat y research. */
+export const AGENT_BILLING = Symbol('AGENT_BILLING');
+
+export interface AgentBillingPort {
+  reserveInvestigation(userId: string): Promise<{ maxPasos: number; restantes: number }>;
+  recordInvestigation(
+    userId: string,
+    investigacionId: string,
+    tokensIn: number,
+    tokensOut: number,
+    costUsd: number,
+  ): Promise<void>;
+  reserveChat(userId: string): Promise<{ modelos: string[]; tokensRestantes: number }>;
+  recordChat(
+    userId: string,
+    messageId: string,
+    tokensIn: number,
+    tokensOut: number,
+    costUsd: number,
+  ): Promise<void>;
+  recordAux(
+    userId: string,
+    kind: 'titulo' | 'sugerencias',
+    idempotencyKey: string,
+    refId: string,
+    tokensIn: number,
+    tokensOut: number,
+    costUsd: number,
+  ): Promise<void>;
+  recordAbstencion(userId: string, messageId: string): Promise<void>;
+  recordVerification(
+    userId: string,
+    investigacionId: string,
+    tokensIn: number,
+    tokensOut: number,
+    costUsd: number,
+  ): Promise<void>;
 }
 
 /** Construcción de eventos firmados (solo la implementa el sandbox). */

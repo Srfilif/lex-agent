@@ -8,9 +8,10 @@ import { USAGE_REPOSITORY, UsageRepository } from '../domain/repositories';
 import { periodKey } from '../domain/usage';
 import { EffectivePlanResolver } from './effective-plan';
 import { cuotaAgotada } from './errors';
+import { AgentBillingPort } from './ports';
 
 @Injectable()
-export class BillingForAgent {
+export class BillingForAgent implements AgentBillingPort {
   constructor(
     private readonly effective: EffectivePlanResolver,
     @Inject(USAGE_REPOSITORY) private readonly usage: UsageRepository,
