@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   AuthHttpError,
   confirmarReset,
@@ -8,22 +9,106 @@ import {
   solicitarReset,
   verificarMfa,
 } from '../auth';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from './ui/card';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 type Paso = 'clave' | 'mfa' | 'olvido' | 'reset';
+type ModoAuth = 'login' | 'register' | 'forgot' | 'reset';
 
-export default function AuthView({ onAuth }: { onAuth: () => void }): React.ReactElement {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [paso, setPaso] = useState<Paso>('clave');
+function Avisos({ error, notice }: { error: string; notice: string }): React.ReactElement | null {
+  if (!error && !notice) return null;
+  return (
+    <div className="space-y-2">
+      {error && (
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+          <AlertCircle />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {notice && (
+        <Alert className="border-primary/20 bg-primary/5">
+          <CheckCircle2 className="text-primary" />
+          <AlertDescription className="text-foreground">{notice}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
+function AuthCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: React.ReactNode;
+  children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <Card className="w-full max-w-[420px] gap-0 border-border py-0 shadow-[var(--shadow-3)]">
+      <CardHeader className="gap-1.5 border-b border-border px-6 py-5">
+        <CardTitle className="font-heading text-xl font-semibold">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="px-6 py-5">{children}</CardContent>
+    </Card>
+  );
+}
+
+export default function AuthView({
+  modo,
+  tokenInicial = '',
+  onAuth,
+  onNavegar,
+}: {
+  modo: ModoAuth;
+  tokenInicial?: string;
+  onAuth: () => void;
+  onNavegar: (destino: string) => void;
+}): React.ReactElement {
+  const [mode, setMode] = useState<'login' | 'register'>(
+    modo === 'register' ? 'register' : 'login',
+  );
+  const [paso, setPaso] = useState<Paso>(
+    modo === 'forgot' ? 'olvido' : modo === 'reset' ? 'reset' : 'clave',
+  );
   const [email, setEmail] = useState(getEmail() ?? '');
   const [password, setPassword] = useState('');
   const [mfaToken, setMfaToken] = useState('');
   const [codigo, setCodigo] = useState('');
   const [usarRecuperacion, setUsarRecuperacion] = useState(false);
-  const [tokenReset, setTokenReset] = useState('');
+  const [tokenReset, setTokenReset] = useState(tokenInicial);
   const [nuevaClave, setNuevaClave] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  // La URL es la fuente de verdad para login/registro/recuperación.
+  useEffect(() => {
+    if (modo === 'register') {
+      setMode('register');
+      setPaso('clave');
+    } else if (modo === 'forgot') {
+      setMode('login');
+      setPaso('olvido');
+    } else if (modo === 'reset') {
+      setMode('login');
+      setPaso('reset');
+      setTokenReset(tokenInicial);
+    } else {
+      setMode('login');
+      setPaso('clave');
+    }
+  }, [modo, tokenInicial]);
 
   function describe(e: unknown, defecto: string): string {
     if (e instanceof AuthHttpError) {
@@ -66,6 +151,7 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
         setNotice(`${msg} Ahora inicia sesión.`);
         setMode('login');
         setPassword('');
+        onNavegar('/login');
       }
     } catch (err) {
       setError(describe(err, 'No se pudo iniciar sesión.'));
@@ -108,6 +194,7 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
       const msg = await solicitarReset(email.trim());
       setNotice(`${msg} En desarrollo, el token llega por correo o por el registro del servidor.`);
       setPaso('reset');
+      onNavegar('/reset-password');
     } catch (err) {
       setError(describe(err, 'No se pudo solicitar el cambio.'));
     } finally {
@@ -132,6 +219,7 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
       setPassword('');
       setTokenReset('');
       setNuevaClave('');
+      onNavegar('/login');
     } catch (err) {
       setError(describe(err, 'No se pudo restablecer la contraseña.'));
     } finally {
@@ -142,33 +230,40 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
   if (paso === 'mfa') {
     return (
       <div className="auth-wrap">
-        <div className="auth-card">
-          <h2>Segundo factor</h2>
-          <p className="meta">
-            {usarRecuperacion
+        <AuthCard
+          title="Segundo factor"
+          description={
+            usarRecuperacion
               ? 'Usa uno de tus códigos de recuperación (un solo uso).'
-              : 'Abre tu app autenticadora y escribe el código actual.'}
-          </p>
-          <form onSubmit={submitMfa}>
-            <label>
-              {usarRecuperacion ? 'Código de recuperación' : 'Código de 6 dígitos'}
-              <input
+              : 'Abre tu app autenticadora y escribe el código actual.'
+          }
+        >
+          <form className="space-y-4" onSubmit={submitMfa}>
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-mfa-code">
+                {usarRecuperacion ? 'Código de recuperación' : 'Código de 6 dígitos'}
+              </Label>
+              <Input
+                id="auth-mfa-code"
+                className="h-10"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
                 placeholder={usarRecuperacion ? 'p. ej. XXXX-XXXX' : '123456'}
                 autoComplete="one-time-code"
               />
-            </label>
-            {error && <p className="error" role="alert">{error}</p>}
-            {notice && <p className="ok">{notice}</p>}
-            <button type="submit" disabled={loading}>
+            </div>
+            <Avisos error={error} notice={notice} />
+            <Button type="submit" size="lg" className="h-10 w-full" disabled={loading}>
+              {loading && <Loader2 className="animate-spin" />}
               {loading ? 'Verificando…' : 'Verificar e ingresar'}
-            </button>
+            </Button>
           </form>
-          <p className="meta">
-            <button
+          <div className="mt-4 flex flex-wrap justify-between gap-2 border-t border-border pt-4">
+            <Button
               type="button"
-              className="link"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
               onClick={() => {
                 setUsarRecuperacion(!usarRecuperacion);
                 setCodigo('');
@@ -176,22 +271,23 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
               }}
             >
               {usarRecuperacion ? 'Usar código de la app' : 'Usar un código de recuperación'}
-            </button>
-          </p>
-          <p className="meta">
-            <button
+            </Button>
+            <Button
               type="button"
-              className="link"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
               onClick={() => {
                 setPaso('clave');
                 setError('');
                 setNotice('');
+                onNavegar('/login');
               }}
             >
               Volver al inicio de sesión
-            </button>
-          </p>
-        </div>
+            </Button>
+          </div>
+        </AuthCard>
       </div>
     );
   }
@@ -199,132 +295,161 @@ export default function AuthView({ onAuth }: { onAuth: () => void }): React.Reac
   if (paso === 'olvido' || paso === 'reset') {
     return (
       <div className="auth-wrap">
-        <div className="auth-card">
-          <h2>Recuperar contraseña</h2>
+        <AuthCard
+          title="Recuperar contraseña"
+          description={
+            paso === 'olvido'
+              ? 'Te enviamos un token válido por 1 hora.'
+              : 'Pega el token que recibiste por correo y elige una contraseña nueva.'
+          }
+        >
           {paso === 'olvido' ? (
-            <>
-              <p className="meta">Te enviamos un token válido por 1 hora.</p>
-              <form onSubmit={submitOlvido}>
-                <label>
-                  Correo
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@ejemplo.co" />
-                </label>
-                {error && <p className="error" role="alert">{error}</p>}
-                {notice && <p className="ok">{notice}</p>}
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Enviando…' : 'Solicitar token'}
-                </button>
-              </form>
-            </>
+            <form className="space-y-4" onSubmit={submitOlvido}>
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-recovery-email">Correo</Label>
+                <Input
+                  id="auth-recovery-email"
+                  className="h-10"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tucorreo@ejemplo.co"
+                />
+              </div>
+              <Avisos error={error} notice={notice} />
+              <Button type="submit" size="lg" className="h-10 w-full" disabled={loading}>
+                {loading && <Loader2 className="animate-spin" />}
+                {loading ? 'Enviando…' : 'Solicitar token'}
+              </Button>
+            </form>
           ) : (
-            <>
-              <p className="meta">
-                Pega el token que recibiste por correo (en desarrollo también queda en el registro
-                del servidor) y elige una contraseña nueva.
-              </p>
-              <form onSubmit={submitReset}>
-                <label>
-                  Token
-                  <input value={tokenReset} onChange={(e) => setTokenReset(e.target.value)} placeholder="Token de recuperación" />
-                </label>
-                <label>
-                  Nueva contraseña
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    value={nuevaClave}
-                    onChange={(e) => setNuevaClave(e.target.value)}
-                    placeholder="Mínimo 8 caracteres"
-                  />
-                </label>
-                {error && <p className="error" role="alert">{error}</p>}
-                {notice && <p className="ok">{notice}</p>}
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Guardando…' : 'Restablecer contraseña'}
-                </button>
-              </form>
-            </>
+            <form className="space-y-4" onSubmit={submitReset}>
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-reset-token">Token</Label>
+                <Input
+                  id="auth-reset-token"
+                  className="h-10"
+                  value={tokenReset}
+                  onChange={(e) => setTokenReset(e.target.value)}
+                  placeholder="Token de recuperación"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-reset-password">Nueva contraseña</Label>
+                <Input
+                  id="auth-reset-password"
+                  className="h-10"
+                  type="password"
+                  autoComplete="new-password"
+                  value={nuevaClave}
+                  onChange={(e) => setNuevaClave(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+              <Avisos error={error} notice={notice} />
+              <Button type="submit" size="lg" className="h-10 w-full" disabled={loading}>
+                {loading && <Loader2 className="animate-spin" />}
+                {loading ? 'Guardando…' : 'Restablecer contraseña'}
+              </Button>
+            </form>
           )}
-          <p className="meta">
-            <button
+          <div className="mt-4 border-t border-border pt-4">
+            <Button
               type="button"
-              className="link"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
               onClick={() => {
                 setPaso('clave');
                 setError('');
                 setNotice('');
+                onNavegar('/login');
               }}
             >
               Volver al inicio de sesión
-            </button>
-          </p>
-        </div>
+            </Button>
+          </div>
+        </AuthCard>
       </div>
     );
   }
 
   return (
     <div className="auth-wrap">
-      <div className="auth-card">
-        <h2>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h2>
-        <p className="meta">Lex Colombia AI · tus chats quedan guardados por cuenta.</p>
-        <form onSubmit={submitClave}>
-          <label>
-            Correo
-            <input
+      <AuthCard
+        title={mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+        description="Lex Colombia AI · tus chats quedan guardados por cuenta."
+      >
+        <form className="space-y-4" onSubmit={submitClave}>
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-email">Correo</Label>
+            <Input
+              id="auth-email"
+              className="h-10"
               type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tucorreo@ejemplo.co"
             />
-          </label>
-          <label>
-            Contraseña
-            <input
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-password">Contraseña</Label>
+            <Input
+              id="auth-password"
+              className="h-10"
               type="password"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 8 caracteres"
             />
-          </label>
-          {error && <p className="error" role="alert">{error}</p>}
-          {notice && <p className="ok">{notice}</p>}
-          <button type="submit" disabled={loading}>
+          </div>
+          <Avisos error={error} notice={notice} />
+          <Button type="submit" size="lg" className="h-10 w-full" disabled={loading}>
+            {loading && <Loader2 className="animate-spin" />}
             {loading ? 'Espera…' : mode === 'login' ? 'Entrar' : 'Registrarme'}
-          </button>
+          </Button>
         </form>
-        {mode === 'login' && (
-          <p className="meta">
-            <button
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
+          {mode === 'login' ? (
+            <Button
               type="button"
-              className="link"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
               onClick={() => {
                 setPaso('olvido');
                 setError('');
                 setNotice('');
+                onNavegar('/forgot-password');
               }}
             >
               ¿Olvidaste tu contraseña?
-            </button>
-          </p>
-        )}
-        <p className="meta">
-          {mode === 'login' ? '¿Sin cuenta? ' : '¿Ya tienes cuenta? '}
-          <button
-            type="button"
-            className="link"
-            onClick={() => {
-              setMode(mode === 'login' ? 'register' : 'login');
-              setError('');
-              setNotice('');
-            }}
-          >
-            {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
-          </button>
-        </p>
-      </div>
+            </Button>
+          ) : (
+            <span />
+          )}
+          <span>
+            {mode === 'login' ? '¿Sin cuenta? ' : '¿Ya tienes cuenta? '}
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => {
+                const siguiente = mode === 'login' ? 'register' : 'login';
+                setMode(siguiente);
+                setError('');
+                setNotice('');
+                onNavegar(siguiente === 'register' ? '/register' : '/login');
+              }}
+            >
+              {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
+            </Button>
+          </span>
+        </div>
+      </AuthCard>
     </div>
   );
 }

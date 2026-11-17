@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PanelRight, PanelRightClose } from 'lucide-react';
 import { AuthHttpError, mensajeError } from '../auth';
 import { fetchPreferencias } from '../cuenta';
 import {
@@ -31,13 +32,29 @@ import Fragmento from './Fragmento';
 import MessageBubble from './MessageBubble';
 import Sidebar, { type FiltroProyecto } from './Sidebar';
 import ThreadHead from './ThreadHead';
+import { Button } from './ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import WelcomePane from './WelcomePane';
 
 function uid(): string {
   return `local-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 }
 
-export default function ChatShell({ modeloPreferido }: { modeloPreferido?: string | null }): React.ReactElement {
+export default function ChatShell({
+  modeloPreferido,
+  borradorInicial = '',
+  conversacionInicial = null,
+}: {
+  modeloPreferido?: string | null;
+  borradorInicial?: string;
+  conversacionInicial?: string | null;
+}): React.ReactElement {
   // B7: catálogo del plan + selección de sesión. Efectivo = selección ??
   // preferencia ai.model (si sigue en el plan) ?? defecto del servidor.
   const [modelos, setModelos] = useState<Array<{ id: string; defecto: boolean }>>([]);
@@ -70,8 +87,13 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
   const [convLoading, setConvLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
-  const [sideOpen, setSideOpen] = useState(true);
-  const [input, setInput] = useState('');
+  const [sideOpen, setSideOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth > 860,
+  );
+  const [sourcesOpen, setSourcesOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth > 1240,
+  );
+  const [input, setInput] = useState(borradorInicial);
   const [sending, setSending] = useState(false);
   const [citaChunk, setCitaChunk] = useState<string | null>(null);
   const [citaSecop, setCitaSecop] = useState<string | null>(null);
@@ -166,6 +188,16 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Deep-link desde el inicio o el buscador global: abrir la conversación.
+  useEffect(() => {
+    if (!conversacionInicial) return;
+    void (async () => {
+      await refreshList(archivedRef.current, filtroRef.current);
+      await select(conversacionInicial);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversacionInicial]);
+
   function cambiarFiltro(f: FiltroProyecto): void {
     setFiltro(f);
     void refreshList(archivedRef.current, f);
@@ -187,6 +219,7 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
     try {
       const { messages: ms } = await getConversation(id);
       if (activeRef.current === id) setMessages(ms);
+      if (window.innerWidth <= 860) setSideOpen(false);
     } catch (e) {
       setGlobalError(describeListError(e));
     } finally {
@@ -213,7 +246,7 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
     setGlobalError('');
     setShareUrl('');
     setShareMsg('');
-    setSideOpen(false);
+    if (typeof window !== 'undefined' && window.innerWidth <= 860) setSideOpen(false);
   }
 
   async function rename(id: string, title: string): Promise<void> {
@@ -349,7 +382,7 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
     try {
       const r = await shareConversation(id);
       // URL pública de la WEB (no de la API): la SPA la abre en SharedView.
-      const url = `${window.location.origin}/?share=${r.token}`;
+      const url = `${window.location.origin}/s/${encodeURIComponent(r.token)}`;
       setShareUrl(url);
       setShareMsg('Enlace creado. Cualquiera con el enlace puede leerlo; revócalo cuando quieras.');
     } catch (e) {
@@ -427,6 +460,7 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
   }
 
   function openCita(c: Citation): void {
+    setSourcesOpen(true);
     if (c.chunk_id) {
       setCitaSecop(null);
       setCitaChunk(c.chunk_id);
@@ -631,8 +665,14 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
   const puedeRegenerar =
     activeId !== null && ultima !== null && ultima.role === 'assistant' && !ultima.pending && !ultima.error && !!ultima.content;
 
+  const ultimaCitas = ultima?.citations.length ?? 0;
+
   return (
-    <div className={`chat-shell${sideOpen ? '' : ' side-cerrado'}`}>
+    <div
+      className={`chat-shell${sideOpen ? '' : ' side-cerrado'}${
+        sourcesOpen ? '' : ' no-sources'
+      }`}
+    >
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -656,18 +696,6 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
         projectError={projectError}
       />
       <div className="chat-main">
-        {filtro.kind === 'proyecto' &&
-          (() => {
-            const p = projects.find((x) => x.id === filtro.id);
-            if (!p) return null;
-            return (
-              <ArchivosProyecto
-                projectId={p.id}
-                projectName={p.name}
-                onCambio={() => void refreshProjects()}
-              />
-            );
-          })()}
         {activa && (
           <ThreadHead
             activa={activa}
@@ -683,76 +711,162 @@ export default function ChatShell({ modeloPreferido }: { modeloPreferido?: strin
             onRevocar={() => void revocar()}
           />
         )}
-        {globalError && <p className="error" role="alert">{globalError}</p>}
-        {convLoading && <p className="meta">Cargando conversación…</p>}
-        {!convLoading && messages.length === 0 && <WelcomePane onEjemplo={(q) => void send(q)} />}
-        <ol className="hilo">
-          {messages.map((m, i) => (
-            <MessageBubble
-              key={m.id}
-              m={m}
-              isLast={i === messages.length - 1}
-              puedeRegenerar={puedeRegenerar}
-              regenBusy={regenBusy}
-              onCita={openCita}
-              onCopy={(t) => copy(t)}
-              onRetry={(id) => void retryFailed(id)}
-              onRegenerar={() => void regenerar()}
-            />
-          ))}
-        </ol>
-        <div ref={bottomRef} />
-        {sugerencias.length > 0 && !sending && (
-          <div className="ejemplos" aria-label="Preguntas sugeridas">
-            {sugerencias.map((s) => (
-              <button key={s} type="button" className="ejemplo" onClick={() => void send(s)}>
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-        <Composer
-          input={input}
-          sending={sending}
-          onInput={setInput}
-          onSend={() => void send()}
-          onStop={detener}
-        />
-        {modelos.length > 1 ? (
-          <p className="meta">
-            <label>
-              Modelo:{' '}
-              <select
-                aria-label="Modelo de chat"
-                value={modeloSel ?? ''}
-                onChange={(e) => setModeloSel(e.target.value || null)}
-              >
-                <option value="">Por defecto del plan</option>
-                {modelos.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.id}
-                    {m.defecto ? ' (defecto)' : ''}
-                  </option>
+        <div className="chat-scroll">
+          <div className="chat-inner">
+            {filtro.kind === 'proyecto' &&
+              (() => {
+                const p = projects.find((x) => x.id === filtro.id);
+                if (!p) return null;
+                return (
+                  <ArchivosProyecto
+                    projectId={p.id}
+                    projectName={p.name}
+                    onCambio={() => void refreshProjects()}
+                  />
+                );
+              })()}
+            {globalError && (
+              <div className="msg-error" role="alert">
+                <p className="error">{globalError}</p>
+                <button type="button" className="secundario-claro" onClick={() => setGlobalError('')}>
+                  Cerrar
+                </button>
+              </div>
+            )}
+            {convLoading && (
+              <div style={{ padding: 'var(--space-6) 0' }}>
+                <div className="skeleton" style={{ height: 16, width: '45%', margin: '0.7rem 0' }} />
+                <div className="skeleton" style={{ height: 16, width: '80%', margin: '0.7rem 0' }} />
+                <div className="skeleton" style={{ height: 16, width: '68%', margin: '0.7rem 0' }} />
+              </div>
+            )}
+            {!convLoading && messages.length === 0 && (
+              <WelcomePane onEjemplo={(q) => void send(q)} />
+            )}
+            <ol className="hilo">
+              {messages.map((m, i) => (
+                <MessageBubble
+                  key={m.id}
+                  m={m}
+                  isLast={i === messages.length - 1}
+                  puedeRegenerar={puedeRegenerar}
+                  regenBusy={regenBusy}
+                  onCita={openCita}
+                  onCopy={(t) => copy(t)}
+                  onRetry={(id) => void retryFailed(id)}
+                  onRegenerar={() => void regenerar()}
+                />
+              ))}
+            </ol>
+            <div ref={bottomRef} />
+            {sugerencias.length > 0 && !sending && (
+              <div className="ejemplos" aria-label="Preguntas sugeridas" style={{ marginBottom: 'var(--space-4)' }}>
+                {sugerencias.map((s) => (
+                  <button key={s} type="button" className="ejemplo" onClick={() => void send(s)}>
+                    {s}
+                  </button>
                 ))}
-              </select>
-            </label>
-          </p>
-        ) : (
-          <p className="meta">
-            Modelo efectivo: {modelos[0]?.id ?? 'por defecto del servidor (según tu plan)'}
-          </p>
-        )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="composer-wrap">
+          <div className="composer-inner">
+            <Composer
+              input={input}
+              sending={sending}
+              onInput={setInput}
+              onSend={() => void send()}
+              onStop={detener}
+              onToggleSources={() => setSourcesOpen((v) => !v)}
+              sourcesOpen={sourcesOpen}
+              sourcesCount={ultimaCitas}
+            />
+            <div className="composer-meta">
+              <span className="meta" style={{ fontSize: 'var(--text-2xs)' }}>
+                Las respuestas deben verificarse con las fuentes oficiales · No es asesoría jurídica
+              </span>
+              {modelos.length > 1 ? (
+                <Select
+                  value={modeloSel ?? 'default'}
+                  onValueChange={(value) => setModeloSel(value === 'default' ? null : value)}
+                >
+                  <SelectTrigger size="sm" className="h-8 min-w-[190px]" aria-label="Modelo de chat">
+                    <SelectValue placeholder="Modelo por defecto del plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Modelo por defecto del plan</SelectItem>
+                    {modelos.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.id}
+                        {m.defecto ? ' (defecto)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <span className="meta" style={{ fontSize: 'var(--text-2xs)' }}>
+                  {modelos[0]?.id ?? 'Modelo por defecto del servidor'}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="chat-side">
-        {citaSecop && (
-          <aside className="fragmento">
-            <h2>Contrato citado</h2>
-            <p>{citaSecop}</p>
-            <p className="meta">Detalle completo disponible en la vista Contratos SECOP.</p>
-          </aside>
-        )}
-        {!citaSecop && <Fragmento chunkId={citaChunk} modo="chat" />}
-      </div>
+      {sourcesOpen && (
+        <div className="chat-side" aria-label="Panel de fuentes">
+          <div className="sources-head">
+            <h2>
+              <PanelRight size={14} /> Fuentes
+              {ultimaCitas > 0 && <span className="chip chip-accent">{ultimaCitas}</span>}
+            </h2>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => {
+                setSourcesOpen(false);
+                setCitaChunk(null);
+                setCitaSecop(null);
+              }}
+              aria-label="Cerrar panel de fuentes"
+              title="Cerrar panel de fuentes"
+            >
+              <PanelRightClose />
+            </Button>
+          </div>
+          <div className="sources-body">
+            {citaSecop && (
+              <aside className="fragmento">
+                <div className="fragmento-head">
+                  <div className="fragmento-type">
+                    <span className="chip chip-warn">Contrato SECOP</span>
+                  </div>
+                  <h3>Contrato citado</h3>
+                </div>
+                <p className="meta">{citaSecop}</p>
+                <p className="meta">
+                  El detalle completo está disponible en la vista de Contratos SECOP.
+                </p>
+              </aside>
+            )}
+            {!citaSecop && <Fragmento chunkId={citaChunk} modo="chat" />}
+          </div>
+        </div>
+      )}
+      {!sourcesOpen && (
+        <button
+          type="button"
+          className="sources-reopen"
+          onClick={() => setSourcesOpen(true)}
+          aria-label="Abrir panel de fuentes"
+          title="Abrir panel de fuentes"
+        >
+          <PanelRight size={16} />
+          {ultimaCitas > 0 && <span>{ultimaCitas}</span>}
+        </button>
+      )}
     </div>
   );
 }

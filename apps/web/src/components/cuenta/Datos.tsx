@@ -7,6 +7,10 @@ import {
   type Me,
 } from '../../cuenta';
 import Bloque, { describeError } from './comun';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Input } from '../ui/input';
 
 export default function Datos({ me, onSesionCerrada }: { me: Me; onSesionCerrada: () => void }): React.ReactElement {
   const [err, setErr] = useState('');
@@ -79,11 +83,19 @@ export default function Datos({ me, onSesionCerrada }: { me: Me; onSesionCerrada
     <>
       <Bloque titulo="Exportar mis datos">
         <p className="meta">Descarga una copia de tu cuenta en JSON (perfil, preferencias e historial disponible).</p>
-        {msg && <p className="ok">{msg}</p>}
-        {err && <p className="error" role="alert">{err}</p>}
-        <button type="button" onClick={() => void exportar()} disabled={busy}>
+        {msg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{msg}</AlertDescription>
+          </Alert>
+        )}
+        {err && (
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        <Button type="button" onClick={() => void exportar()} disabled={busy}>
           {busy ? 'Generando…' : 'Descargar mis datos'}
-        </button>
+        </Button>
       </Bloque>
       <Bloque titulo="Borrar cuenta">
         <p className="meta">
@@ -92,29 +104,30 @@ export default function Datos({ me, onSesionCerrada }: { me: Me; onSesionCerrada
           anonimizada hasta 1 año. Es irreversible.
         </p>
         <p className="meta">Cuenta: {me.email} — primero solicita el token y luego confírmalo con tu contraseña.</p>
-        <button type="button" className="secundario-claro peligro" onClick={() => void pedir()} disabled={busy}>
+        <Button type="button" variant="outline" className="w-fit text-destructive" onClick={() => void pedir()} disabled={busy}>
           Solicitar token de borrado
-        </button>
-        <label>
+        </Button>
+        <label className="flex flex-col gap-1.5">
           Contraseña
-          <input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <Input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
         </label>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Token de borrado
-          <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega el token" />
+          <Input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega el token" />
         </label>
-        <label className="check">
-          <input type="checkbox" checked={confirmo} onChange={(e) => setConfirmo(e.target.checked)} />
-          Entiendo que el borrado es irreversible y acepto las consecuencias descritas
+        <label className="check flex items-start gap-2">
+          <Checkbox checked={confirmo} onCheckedChange={(checked) => setConfirmo(checked === true)} />
+          <span>Entiendo que el borrado es irreversible y acepto las consecuencias descritas</span>
         </label>
-        <button
+        <Button
           type="button"
-          className="peligro-solido"
+          variant="destructive"
+          className="w-fit"
           onClick={() => void confirmar()}
           disabled={busy || !pw || !token.trim() || !confirmo}
         >
           {busy ? 'Borrando…' : 'Borrar mi cuenta definitivamente'}
-        </button>
+        </Button>
       </Bloque>
     </>
   );

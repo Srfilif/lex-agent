@@ -6,6 +6,9 @@ import {
   type Recuerdo,
 } from '../../cuenta';
 import Bloque, { describeError } from './comun';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 export default function RecuerdosView(): React.ReactElement {
   const [items, setItems] = useState<Recuerdo[]>([]);
@@ -75,17 +78,24 @@ export default function RecuerdosView(): React.ReactElement {
           {items.map((m) => (
             <li key={m.id}>
               <span>{m.fact}</span>{' '}
-              <button type="button" disabled={busy} onClick={() => void borrar(m.id)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                disabled={busy}
+                onClick={() => void borrar(m.id)}
+              >
                 Borrar
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       )}
       <div className="fila">
-        <label>
+        <label className="flex flex-1 flex-col gap-1.5">
           Nuevo recuerdo
-          <input
+          <Input
             value={nuevo}
             disabled={busy}
             maxLength={500}
@@ -96,11 +106,15 @@ export default function RecuerdosView(): React.ReactElement {
             }}
           />
         </label>
-        <button type="button" disabled={busy || !nuevo.trim()} onClick={() => void agregar()}>
+        <Button type="button" disabled={busy || !nuevo.trim()} onClick={() => void agregar()}>
           Agregar
-        </button>
+        </Button>
       </div>
-      {err && <p className="error" role="alert">{err}</p>}
+      {err && (
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
+      )}
     </>
   );
 }

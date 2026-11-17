@@ -72,8 +72,8 @@ await page.getByRole('button', { name: 'Entrar' }).click();
 await page.getByRole('button', { name: 'Chat', exact: true }).waitFor({ timeout: 20000 });
 check('login', true);
 
-// Deep-link #/storage.
-await page.goto(`${WEB}/#/storage`, { waitUntil: 'networkidle' });
+// Deep-link /storage.
+await page.goto(`${WEB}/storage`, { waitUntil: 'networkidle' });
 await page.getByText('acta.txt').waitFor({ timeout: 20000 });
 check('lista acta', true);
 check('lista nota', (await page.getByText('nota.md').count()) === 1);
@@ -104,8 +104,8 @@ await page.getByText('«nota.md» eliminado.').waitFor({ timeout: 20000 });
 check('borrado aviso', true);
 check('totales 1', (await page.getByText(/1 archivo\(s\)/).count()) === 1);
 
-// Alias #/settings/storage muestra lo mismo.
-await page.goto(`${WEB}/#/settings/storage`, { waitUntil: 'networkidle' });
+// Alias /settings/storage muestra lo mismo.
+await page.goto(`${WEB}/settings/storage`, { waitUntil: 'networkidle' });
 await page.getByText('acta.txt').waitFor({ timeout: 20000 });
 check('alias settings/storage', true);
 

@@ -6,6 +6,8 @@ import {
   type Sesion,
 } from '../../cuenta';
 import Bloque, { describeError } from './comun';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Button } from '../ui/button';
 
 export default function Sesiones({ onSesionCerrada }: { onSesionCerrada: () => void }): React.ReactElement {
   const [lista, setLista] = useState<Sesion[]>([]);
@@ -58,8 +60,16 @@ export default function Sesiones({ onSesionCerrada }: { onSesionCerrada: () => v
       <p className="meta">
         El servidor entrega dispositivo, actividad y cuál es la actual (no incluye la IP en esta vista).
       </p>
-      {err && <p className="error" role="alert">{err}</p>}
-      {msg && <p className="ok">{msg}</p>}
+      {err && (
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
+      )}
+      {msg && (
+        <Alert className="border-primary/20 bg-primary/5">
+          <AlertDescription className="text-foreground">{msg}</AlertDescription>
+        </Alert>
+      )}
       {lista.length === 0 && !err && <p className="meta">No hay sesiones activas.</p>}
       <ul className="sesiones">
         {lista.map((s) => (
@@ -74,15 +84,15 @@ export default function Sesiones({ onSesionCerrada }: { onSesionCerrada: () => v
                 {' · '}Expira: {s.expires_at ? new Date(s.expires_at).toLocaleString('es-CO') : '—'}
               </span>
             </div>
-            <button type="button" className="secundario-claro" disabled={busy} onClick={() => void revocar(s)}>
+            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void revocar(s)}>
               Revocar
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
-      <button type="button" className="secundario-claro" onClick={() => void cargar()} disabled={busy}>
+      <Button type="button" variant="outline" size="sm" onClick={() => void cargar()} disabled={busy}>
         Recargar
-      </button>
+      </Button>
     </Bloque>
   );
 }

@@ -1,4 +1,5 @@
 import { AuthHttpError, mensajeError } from '../../auth';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 export function describeError(e: unknown): string {
   if (e instanceof AuthHttpError) {
@@ -8,11 +9,19 @@ export function describeError(e: unknown): string {
   return (e as Error).message || 'Ocurrió un error inesperado.';
 }
 
-export default function Bloque({ titulo, children }: { titulo: string; children: React.ReactNode }): React.ReactElement {
+export default function Bloque({
+  titulo,
+  children,
+}: {
+  titulo: string;
+  children: React.ReactNode;
+}): React.ReactElement {
   return (
-    <section className="cuenta-bloque">
-      <h3>{titulo}</h3>
-      {children}
-    </section>
+    <Card className="cuenta-bloque gap-0 border-0 px-0 py-0 shadow-sm">
+      <CardHeader className="border-b border-border px-5 py-4">
+        <CardTitle className="font-heading text-base font-semibold">{titulo}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 px-5 py-4">{children}</CardContent>
+    </Card>
   );
 }

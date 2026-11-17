@@ -7,6 +7,9 @@ import {
   type Me,
 } from '../../cuenta';
 import Bloque, { describeError } from './comun';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 export default function Perfil({ me, onMe }: { me: Me; onMe: (m: Me) => void }): React.ReactElement {
   const [nombre, setNombre] = useState(me.display_name ?? '');
@@ -77,42 +80,62 @@ export default function Perfil({ me, onMe }: { me: Me; onMe: (m: Me) => void }):
           <div><dt>Verificación</dt><dd>{me.email_verified ? 'Correo verificado' : 'Correo sin verificar'}</dd></div>
           <div><dt>Cuenta creada</dt><dd>{me.created_at ? new Date(me.created_at).toLocaleString('es-CO') : '—'}</dd></div>
         </dl>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Nombre para mostrar
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} placeholder="Tu nombre" />
+          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} placeholder="Tu nombre" />
         </label>
-        {err && <p className="error" role="alert">{err}</p>}
-        {msg && <p className="ok">{msg}</p>}
-        <button type="button" onClick={() => void guardar()} disabled={busy || !nombre.trim()}>
+        {err && (
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        {msg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{msg}</AlertDescription>
+          </Alert>
+        )}
+        <Button type="button" onClick={() => void guardar()} disabled={busy || !nombre.trim()}>
           {busy ? 'Guardando…' : 'Guardar nombre'}
-        </button>
+        </Button>
       </Bloque>
       <Bloque titulo="Cambiar correo">
         <p className="meta">
           Te pedimos la contraseña actual y enviamos un token al correo <em>nuevo</em> (válido 24 h).
           Al confirmar, las demás sesiones se cierran por seguridad.
         </p>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Contraseña actual
-          <input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <Input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
         </label>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Correo nuevo
-          <input type="email" value={nuevo} onChange={(e) => setNuevo(e.target.value)} placeholder="nuevo@ejemplo.co" />
+          <Input type="email" value={nuevo} onChange={(e) => setNuevo(e.target.value)} placeholder="nuevo@ejemplo.co" />
         </label>
-        {emailErr && <p className="error" role="alert">{emailErr}</p>}
-        {emailMsg && <p className="ok">{emailMsg}</p>}
-        <button type="button" onClick={() => void pedirCambio()} disabled={emailBusy || !pw || !nuevo.includes('@')}>
+        {emailErr && (
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+            <AlertDescription>{emailErr}</AlertDescription>
+          </Alert>
+        )}
+        {emailMsg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{emailMsg}</AlertDescription>
+          </Alert>
+        )}
+        <Button type="button" onClick={() => void pedirCambio()} disabled={emailBusy || !pw || !nuevo.includes('@')}>
           {emailBusy ? 'Enviando…' : 'Enviar token al correo nuevo'}
-        </button>
-        <label>
+        </Button>
+        <label className="flex flex-col gap-1.5">
           Token recibido en el correo nuevo
-          <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega el token aquí" />
+          <Input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega el token aquí" />
         </label>
-        {confMsg && <p className="ok">{confMsg}</p>}
-        <button type="button" className="secundario-claro" onClick={() => void confirmar()} disabled={emailBusy || !token.trim()}>
+        {confMsg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{confMsg}</AlertDescription>
+          </Alert>
+        )}
+        <Button type="button" variant="outline" onClick={() => void confirmar()} disabled={emailBusy || !token.trim()}>
           Confirmar cambio de correo
-        </button>
+        </Button>
       </Bloque>
     </>
   );

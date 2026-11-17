@@ -21,6 +21,10 @@ import {
   type Suscripcion,
   type Uso,
 } from '../cuenta';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 function describe(e: unknown): string {
   if (e instanceof AuthHttpError) {
@@ -168,8 +172,16 @@ export default function Facturacion(): React.ReactElement {
 
   return (
     <div>
-      {err && <p className="error" role="alert">{err}</p>}
-      {msg && <p className="ok">{msg}</p>}
+      {err && (
+        <Alert variant="destructive" className="mb-3 border-destructive/30 bg-destructive/5">
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
+      )}
+      {msg && (
+        <Alert className="mb-3 border-primary/20 bg-primary/5">
+          <AlertDescription className="text-foreground">{msg}</AlertDescription>
+        </Alert>
+      )}
 
       <section className="cuenta-bloque">
         <h3>Suscripción actual</h3>
@@ -184,22 +196,22 @@ export default function Facturacion(): React.ReactElement {
           <p className="meta">Sin suscripción (plan gratuito).</p>
         )}
         <div className="fila">
-          <button
+          <Button
             type="button"
-            className="secundario-claro"
+            variant="outline"
             disabled={busy}
             onClick={() => void accionar('cancelar', cancelarSuscripcion, 'Renovación cancelada; mantienes acceso hasta fin de periodo')}
           >
             Cancelar renovación
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="secundario-claro"
+            variant="outline"
             disabled={busy}
             onClick={() => void accionar('reanudar', reanudarSuscripcion, 'Suscripción reanudada')}
           >
             Reanudar
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -207,67 +219,83 @@ export default function Facturacion(): React.ReactElement {
         <h3>Cambiar de plan</h3>
         <p className="meta">Cambio inmediato con periodo nuevo de 30 días, sin prorrota (sandbox). Requiere suscripción de pago: free → pago va por checkout.</p>
         <div className="fila">
-          <select value={planElegido} onChange={(e) => setPlanElegido(e.target.value)} disabled={busy}>
-            {planes.filter((p) => p.price_minor !== null).map((p) => (
-              <option key={p.code} value={p.code}>{p.name} ({cop(p.price_minor, p.currency)})</option>
-            ))}
-          </select>
-          <button
+          <Select value={planElegido} onValueChange={setPlanElegido} disabled={busy}>
+            <SelectTrigger className="min-w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {planes.filter((p) => p.price_minor !== null).map((p) => (
+                <SelectItem key={p.code} value={p.code}>{p.name} ({cop(p.price_minor, p.currency)})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
             type="button"
-            className="secundario-claro"
+            variant="outline"
             disabled={busy}
             onClick={() => void accionar('cambio de plan', () => cambiarPlan(planElegido), `Plan cambiado a ${planElegido}`)}
           >
             Cambiar plan
-          </button>
+          </Button>
         </div>
       </section>
 
       <section className="cuenta-bloque">
         <h3>Planes</h3>
         <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Plan</th><th>Precio</th><th>Investigaciones/mes</th><th>Tokens/mes</th><th>Modelos</th></tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Plan</TableHead>
+                <TableHead>Precio</TableHead>
+                <TableHead>Investigaciones/mes</TableHead>
+                <TableHead>Tokens/mes</TableHead>
+                <TableHead>Modelos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {planes.map((p) => (
-                <tr key={p.code}>
-                  <td><strong>{p.name}</strong> ({p.code})<br /><span className="meta">{p.description}</span></td>
-                  <td className="num">{cop(p.price_minor, p.currency)}</td>
-                  <td className="num">{p.limites.investigaciones_mes}</td>
-                  <td className="num">{p.limites.tokens_mes}</td>
-                  <td>{p.limites.modelos.join(', ') || '—'}</td>
-                </tr>
+                <TableRow key={p.code}>
+                  <TableCell>
+                    <strong>{p.name}</strong> ({p.code})
+                    <br />
+                    <span className="text-xs text-muted-foreground">{p.description}</span>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{cop(p.price_minor, p.currency)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{p.limites.investigaciones_mes}</TableCell>
+                  <TableCell className="text-right tabular-nums">{p.limites.tokens_mes}</TableCell>
+                  <TableCell>{p.limites.modelos.join(', ') || '—'}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 
       <section className="cuenta-bloque">
         <h3>Checkout sandbox (pago simulado, sin cobro real)</h3>
         <div className="fila">
-          <select value={planElegido} onChange={(e) => setPlanElegido(e.target.value)} disabled={busy}>
-            {planes.map((p) => (
-              <option key={p.code} value={p.code}>{p.name} — {cop(p.price_minor, p.currency)}</option>
-            ))}
-          </select>
-          <button type="button" onClick={() => void checkout()} disabled={busy}>
+          <Select value={planElegido} onValueChange={setPlanElegido} disabled={busy}>
+            <SelectTrigger className="min-w-[240px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {planes.map((p) => (
+                <SelectItem key={p.code} value={p.code}>{p.name} — {cop(p.price_minor, p.currency)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="button" onClick={() => void checkout()} disabled={busy}>
             {busy ? 'Creando…' : 'Iniciar checkout'}
-          </button>
+          </Button>
         </div>
         {checkoutId && (
           <p className="meta">Checkout pendiente: <code className="romper">{checkoutId}</code></p>
         )}
         {checkoutId && (
           <div className="fila">
-            <button type="button" className="secundario-claro" onClick={() => void decidir(true)} disabled={busy}>
+            <Button type="button" variant="outline" onClick={() => void decidir(true)} disabled={busy}>
               Aprobar pago
-            </button>
-            <button type="button" className="secundario-claro peligro" onClick={() => void decidir(false)} disabled={busy}>
+            </Button>
+            <Button type="button" variant="destructive" onClick={() => void decidir(false)} disabled={busy}>
               Rechazar pago
-            </button>
+            </Button>
           </div>
         )}
         {sim && (
@@ -277,9 +305,9 @@ export default function Facturacion(): React.ReactElement {
               encabezado <code>{sim.signature_header}</code>):
             </p>
             <div className="fila">
-              <button type="button" onClick={() => void entregar()} disabled={busy}>
+              <Button type="button" onClick={() => void entregar()} disabled={busy}>
                 {busy ? 'Entregando…' : 'Entregar webhook y activar'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -310,22 +338,28 @@ export default function Facturacion(): React.ReactElement {
           <p className="meta">Aún no hay pagos.</p>
         ) : (
           <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Fecha</th><th>Plan</th><th>Monto</th><th>Estado</th><th>Proveedor</th></tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Monto</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pagos.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '—'}</td>
-                    <td>{p.plan}</td>
-                    <td className="num">{cop(p.amount_minor, p.currency)}</td>
-                    <td>{p.status}</td>
-                    <td>{p.provider}</td>
-                  </tr>
+                  <TableRow key={p.id}>
+                    <TableCell>{p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '—'}</TableCell>
+                    <TableCell>{p.plan}</TableCell>
+                    <TableCell className="text-right tabular-nums">{cop(p.amount_minor, p.currency)}</TableCell>
+                    <TableCell>{p.status}</TableCell>
+                    <TableCell>{p.provider}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>
@@ -345,9 +379,9 @@ export default function Facturacion(): React.ReactElement {
             ))}
           </ul>
         )}
-        <button type="button" className="secundario-claro" onClick={() => void cargar()} disabled={busy}>
+        <Button type="button" variant="outline" size="sm" onClick={() => void cargar()} disabled={busy}>
           Recargar
-        </button>
+        </Button>
       </section>
     </div>
   );

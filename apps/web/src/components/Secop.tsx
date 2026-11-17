@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import type { Contrato } from '../api';
 import { api } from '../api';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 const fmtCOP = (v: number | null) =>
   v === null || v === undefined || Number.isNaN(v)
@@ -38,38 +42,54 @@ export default function Secop() {
     <section>
       <h2>Contratos SECOP II</h2>
       <form className="secop-form" onSubmit={buscar}>
-        <input placeholder="Entidad" value={f.entidad} onChange={set('entidad')} />
-        <input placeholder="Proveedor" value={f.proveedor} onChange={set('proveedor')} />
-        <input placeholder="Objeto" value={f.objeto} onChange={set('objeto')} />
-        <input placeholder="Valor mín (COP)" inputMode="numeric" value={f.valor_min} onChange={set('valor_min')} />
-        <input placeholder="Modalidad" value={f.modalidad} onChange={set('modalidad')} />
-        <input placeholder="Año" inputMode="numeric" value={f.anio} onChange={set('anio')} />
-        <button type="submit" disabled={loading}>{loading ? 'Buscando…' : 'Buscar'}</button>
+        <Input placeholder="Entidad" value={f.entidad} onChange={set('entidad')} />
+        <Input placeholder="Proveedor" value={f.proveedor} onChange={set('proveedor')} />
+        <Input placeholder="Objeto" value={f.objeto} onChange={set('objeto')} />
+        <Input placeholder="Valor mín (COP)" inputMode="numeric" value={f.valor_min} onChange={set('valor_min')} />
+        <Input placeholder="Modalidad" value={f.modalidad} onChange={set('modalidad')} />
+        <Input placeholder="Año" inputMode="numeric" value={f.anio} onChange={set('anio')} />
+        <Button type="submit" disabled={loading}>{loading ? 'Buscando…' : 'Buscar'}</Button>
       </form>
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <Alert variant="destructive" className="my-2 border-destructive/30 bg-destructive/5">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       {meta && <p className="meta">{meta}</p>}
       {rows && (
         <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Entidad</th><th>Proveedor</th><th>Objeto</th><th>Valor</th><th>Modalidad</th><th>Señales</th><th /></tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Entidad</TableHead>
+                <TableHead>Proveedor</TableHead>
+                <TableHead>Objeto</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Modalidad</TableHead>
+                <TableHead>Señales</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((c) => (
-                <tr key={c.id_contrato + c.nombre_entidad}>
-                  <td>{c.nombre_entidad}</td>
-                  <td>{c.proveedor_adjudicado}</td>
-                  <td className="objeto">{(c.objeto_del_contrato || c.descripcion_del_proceso || '—').slice(0, 160)}</td>
-                  <td className="num">{fmtCOP(c.valor_del_contrato)}</td>
-                  <td>{c.modalidad_de_contratacion || '—'}</td>
-                  <td>{c.senales.length ? c.senales.map((s) => (
+                <TableRow key={c.id_contrato + c.nombre_entidad}>
+                  <TableCell>{c.nombre_entidad}</TableCell>
+                  <TableCell>{c.proveedor_adjudicado}</TableCell>
+                  <TableCell className="max-w-[320px] whitespace-normal">{(c.objeto_del_contrato || c.descripcion_del_proceso || '—').slice(0, 160)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtCOP(c.valor_del_contrato)}</TableCell>
+                  <TableCell>{c.modalidad_de_contratacion || '—'}</TableCell>
+                  <TableCell>{c.senales.length ? c.senales.map((s) => (
                     <span key={s.regla} className="senial" title={s.detalle}>{s.regla}</span>
-                  )) : '—'}</td>
-                  <td><a href={c.enlace_origen} target="_blank" rel="noreferrer">origen</a></td>
-                </tr>
+                  )) : '—'}</TableCell>
+                  <TableCell>
+                    <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+                      <a href={c.enlace_origen} target="_blank" rel="noreferrer">origen</a>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           {rows.length === 0 && <p className="meta">Sin resultados con esos filtros.</p>}
         </div>
       )}

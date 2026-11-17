@@ -8,6 +8,11 @@ import {
   type ProjectFile,
 } from '../chatApi';
 import { fechaLegible, tamanoLegible } from '../shared/formato';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Progress } from './ui/progress';
+import { Trash2 } from 'lucide-react';
 
 /** Mensaje honesto según el error real del backend (B6). */
 function describeUploadError(e: unknown): string {
@@ -124,27 +129,35 @@ export default function ArchivosProyecto({
         )}
       </div>
       {usage && (
-        <div className="cuota" role="img" aria-label={`Cuota: ${usage.count} de ${usage.max_files} archivos`}>
-          <div
-            className="cuota-barra"
-            style={{ width: `${Math.min(100, (usage.count / usage.max_files) * 100)}%` }}
-          />
-        </div>
+        <Progress
+          value={Math.min(100, (usage.count / usage.max_files) * 100)}
+          aria-label={`Cuota: ${usage.count} de ${usage.max_files} archivos`}
+          className="my-2"
+        />
       )}
       <div className="archivos-subir">
-        <input
+        <Input
           ref={inputRef}
           type="file"
           accept=".txt,.md,text/plain,text/markdown"
           disabled={subiendo}
           onChange={(e) => void subir(e.target.files)}
           aria-label="Subir archivo .txt o .md"
+          className="h-auto py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs"
         />
         {subiendo && <p className="meta" role="status">Subiendo y procesando…</p>}
       </div>
       <p className="meta">Solo .txt y .md (máx. 10 MB por archivo). PDF/DOCX aún no soportados.</p>
-      {aviso && <p className="ok">{aviso}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {aviso && (
+        <Alert className="my-2 border-primary/20 bg-primary/5">
+          <AlertDescription className="text-foreground">{aviso}</AlertDescription>
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="destructive" className="my-2 border-destructive/30 bg-destructive/5">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       {loading && <p className="meta">Cargando archivos…</p>}
       {!loading && files.length === 0 && !error && (
         <p className="meta">Sin archivos. Sube un .txt o .md para preguntar sobre su contenido.</p>
@@ -163,32 +176,38 @@ export default function ArchivosProyecto({
               </div>
               {confirmBorrar === f.id ? (
                 <div className="side-actions">
-                  <button
+                  <Button
                     type="button"
-                    className="mini danger"
+                    variant="destructive"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
                     disabled={borrando}
                     onClick={() => void borrar(f.id)}
                   >
                     {borrando ? '…' : '¿Sí?'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="mini"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
                     disabled={borrando}
                     onClick={() => setConfirmBorrar(null)}
                   >
                     No
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
+                <Button
                   type="button"
-                  className="mini danger"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
                   title={`Borrar ${f.filename}`}
                   onClick={() => setConfirmBorrar(f.id)}
                 >
-                  🗑 Borrar
-                </button>
+                  <Trash2 /> Borrar
+                </Button>
               )}
             </li>
           ))}

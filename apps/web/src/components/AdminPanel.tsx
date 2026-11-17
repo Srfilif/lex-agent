@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Ban, CheckCircle2, KeyRound, Search, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { AuthHttpError, mensajeError } from '../auth';
 import {
   adminCambiarEstado,
@@ -8,6 +9,11 @@ import {
   adminResetTotp,
   type AdminUsuario,
 } from '../cuenta';
+import { Alert, AlertDescription } from './ui/alert';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 function describe(e: unknown): string {
   if (e instanceof AuthHttpError) {
@@ -15,6 +21,10 @@ function describe(e: unknown): string {
     return mensajeError(e.status, e.message);
   }
   return (e as Error).message || 'Ocurrió un error inesperado.';
+}
+
+function inicial(u: AdminUsuario): string {
+  return (u.display_name || u.email).slice(0, 2).toUpperCase();
 }
 
 export default function AdminPanel(): React.ReactElement {
@@ -26,7 +36,6 @@ export default function AdminPanel(): React.ReactElement {
   const [busy, setBusy] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
-  // grant
   const [grantId, setGrantId] = useState('');
   const [grantPlan, setGrantPlan] = useState('plus');
   const [grantDias, setGrantDias] = useState('30');
@@ -72,85 +81,186 @@ export default function AdminPanel(): React.ReactElement {
       setErr('Grant: user_id válido, plan y días entre 1 y 365.');
       return;
     }
-    await accionar('Plan otorgado.', () => adminOtorgarPlan(grantId.trim(), grantPlan.trim().toLowerCase(), dias));
+    await accionar('Plan otorgado.', () =>
+      adminOtorgarPlan(grantId.trim(), grantPlan.trim().toLowerCase(), dias),
+    );
   }
 
-  if (cargando) return <p className="meta">Cargando usuarios…</p>;
+  const activos = usuarios.filter((u) => u.status === 'active').length;
+  const admins = usuarios.filter((u) => u.role === 'admin').length;
 
   return (
     <div>
-      {err && <p className="error" role="alert">{err}</p>}
-      {msg && <p className="ok">{msg}</p>}
+      {err && (
+        <Alert variant="destructive" className="mb-3 border-destructive/30 bg-destructive/5">
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
+      )}
+      {msg && (
+        <Alert className="mb-3 border-primary/20 bg-primary/5">
+          <CheckCircle2 className="text-primary" />
+          <AlertDescription className="text-foreground">{msg}</AlertDescription>
+        </Alert>
+      )}
 
-      <section className="cuenta-bloque">
-        <h3>Usuarios ({total})</h3>
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+        <div className="stat">
+          <div className="stat-value">{total}</div>
+          <div className="stat-label">Usuarios</div>
+        </div>
+        <div className="stat">
+          <div className="stat-value">{activos}</div>
+          <div className="stat-label">Activos (página)</div>
+        </div>
+        <div className="stat">
+          <div className="stat-value">{admins}</div>
+          <div className="stat-label">Administradores</div>
+        </div>
+      </div>
+
+      <section className="cuenta-bloque" style={{ marginTop: 'var(--space-4)' }}>
+        <div className="section-head">
+          <h3 style={{ margin: 0 }}>
+            <Users size={15} style={{ verticalAlign: '-2px', marginRight: 5 }} />
+            Usuarios
+          </h3>
+          <span className="chip">
+            <ShieldCheck size={11} /> Acciones auditadas
+          </span>
+        </div>
         <form
-          className="fila"
+          className="filter-bar"
           onSubmit={(e) => {
             e.preventDefault();
             void cargar();
           }}
+          style={{ marginBottom: 'var(--space-2)' }}
         >
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por correo" maxLength={100} />
-          <button type="submit" className="secundario-claro" disabled={busy}>Buscar</button>
+          <label style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
+            <Search
+              size={14}
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: 10,
+                color: 'var(--muted)',
+                pointerEvents: 'none',
+              }}
+            />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por correo…"
+              maxLength={100}
+              aria-label="Buscar usuarios por correo"
+              className="w-full pl-9"
+            />
+          </label>
+          <Button type="submit" variant="outline" disabled={busy}>
+            Buscar
+          </Button>
         </form>
-        {usuarios.length === 0 && !err && <p className="meta">Sin usuarios para mostrar.</p>}
+        {cargando && (
+          <div style={{ padding: 'var(--space-3) 0' }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="skeleton"
+                style={{ height: 32, margin: '0.5rem 0', width: `${90 - i * 8}%` }}
+              />
+            ))}
+          </div>
+        )}
+        {!cargando && usuarios.length === 0 && !err && (
+          <p className="meta">Sin usuarios para mostrar.</p>
+        )}
         <ul className="admin-lista">
           {usuarios.map((u) => (
             <li key={u.id}>
-              <div>
-                <strong>{u.email}</strong> <span className="meta">({u.role} · {u.status})</span>
-                <br />
-                <span className="meta">
-                  {u.display_name || 'Sin nombre'} · {u.email_verified ? 'verificado' : 'sin verificar'} ·{' '}
-                  {u.created_at ? new Date(u.created_at).toLocaleDateString('es-CO') : '—'}
-                </span>
-                <br />
-                <code className="romper mini-id">{u.id}</code>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <Avatar className="size-8 border border-primary/20" aria-hidden="true">
+                  <AvatarFallback className="bg-primary/10 text-[11px] font-bold text-primary">
+                    {inicial(u)}
+                  </AvatarFallback>
+                </Avatar>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 'var(--text-sm)' }}>{u.email}</strong>
+                    <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge>
+                    <Badge variant={u.status === 'active' ? 'outline' : 'destructive'}>
+                      {u.status}
+                    </Badge>
+                  </div>
+                  <p className="meta" style={{ fontSize: 'var(--text-xs)', marginTop: 2 }}>
+                    {u.display_name || 'Sin nombre'} ·{' '}
+                    {u.email_verified ? 'verificado' : 'sin verificar'} ·{' '}
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString('es-CO') : '—'}
+                  </p>
+                  <code className="romper mini-id">{u.id}</code>
+                </div>
               </div>
-              <div className="fila">
-                <button
+              <div className="fila" style={{ margin: 0 }}>
+                <Button
                   type="button"
-                  className="secundario-claro"
+                  variant="outline"
+                  size="sm"
                   disabled={busy}
-                  onClick={() => void accionar('Estado actualizado.', () =>
-                    adminCambiarEstado(u.id, u.status === 'active' ? 'disabled' : 'active'))}
+                  onClick={() =>
+                    void accionar('Estado actualizado.', () =>
+                      adminCambiarEstado(u.id, u.status === 'active' ? 'disabled' : 'active'),
+                    )
+                  }
                 >
+                  {u.status === 'active' ? <Ban /> : <CheckCircle2 />}{' '}
                   {u.status === 'active' ? 'Deshabilitar' : 'Habilitar'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="secundario-claro"
+                  variant="outline"
+                  size="sm"
                   disabled={busy}
-                  onClick={() => void accionar('Rol actualizado.', () =>
-                    adminCambiarRol(u.id, u.role === 'admin' ? 'user' : 'admin'))}
+                  onClick={() =>
+                    void accionar('Rol actualizado.', () =>
+                      adminCambiarRol(u.id, u.role === 'admin' ? 'user' : 'admin'),
+                    )
+                  }
                 >
-                  {u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
-                </button>
+                  <UserCog /> {u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
+                </Button>
                 {confirmReset === u.id ? (
                   <>
-                    <span className="meta">¿Borrar su 2FA? Se cierran sus sesiones.</span>
-                    <button
+                    <span className="meta" style={{ fontSize: 'var(--text-xs)' }}>
+                      ¿Borrar su 2FA? Se cierran sus sesiones.
+                    </span>
+                    <Button
                       type="button"
-                      className="secundario-claro peligro"
+                      variant="destructive"
+                      size="sm"
                       disabled={busy}
                       onClick={() => void accionar('TOTP reiniciado.', () => adminResetTotp(u.id))}
                     >
-                      Confirmar reset TOTP
-                    </button>
-                    <button type="button" className="secundario-claro" onClick={() => setConfirmReset(null)}>
+                      Confirmar reset
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirmReset(null)}
+                    >
                       Cancelar
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button
+                  <Button
                     type="button"
-                    className="secundario-claro peligro"
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive"
                     disabled={busy}
                     onClick={() => setConfirmReset(u.id)}
                   >
-                    Reset TOTP
-                  </button>
+                    <KeyRound /> Reset TOTP
+                  </Button>
                 )}
               </div>
             </li>
@@ -159,13 +269,41 @@ export default function AdminPanel(): React.ReactElement {
       </section>
 
       <section className="cuenta-bloque">
-        <h3>Otorgar plan (grant manual auditado)</h3>
-        <p className="meta">Cuerpo exacto del backend: user_id (UUID), plan (minúsculas) y días (1–365).</p>
+        <h3>
+          <ShieldCheck size={15} style={{ verticalAlign: '-2px', marginRight: 5 }} />
+          Otorgar plan
+        </h3>
+        <p className="meta" style={{ fontSize: 'var(--text-xs)' }}>
+          Concesión manual auditada. Requiere user_id (UUID), plan en minúsculas y días entre 1 y
+          365.
+        </p>
         <div className="fila">
-          <input value={grantId} onChange={(e) => setGrantId(e.target.value)} placeholder="user_id (UUID)" />
-          <input value={grantPlan} onChange={(e) => setGrantPlan(e.target.value)} placeholder="plan" maxLength={20} />
-          <input value={grantDias} onChange={(e) => setGrantDias(e.target.value)} placeholder="días" inputMode="numeric" />
-          <button type="button" onClick={() => void otorgar()} disabled={busy}>Otorgar</button>
+          <Input
+            value={grantId}
+            onChange={(e) => setGrantId(e.target.value)}
+            placeholder="user_id (UUID)"
+            aria-label="Identificador del usuario"
+            style={{ flex: '2 1 260px' }}
+          />
+          <Input
+            value={grantPlan}
+            onChange={(e) => setGrantPlan(e.target.value)}
+            placeholder="plan"
+            maxLength={20}
+            aria-label="Plan"
+            style={{ flex: '1 1 100px' }}
+          />
+          <Input
+            value={grantDias}
+            onChange={(e) => setGrantDias(e.target.value)}
+            placeholder="días"
+            inputMode="numeric"
+            aria-label="Días"
+            style={{ flex: '1 1 80px' }}
+          />
+          <Button type="button" onClick={() => void otorgar()} disabled={busy}>
+            Otorgar plan
+          </Button>
         </div>
       </section>
     </div>

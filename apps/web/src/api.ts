@@ -86,6 +86,31 @@ export interface Cobertura {
   docs: DocCobertura[];
 }
 
+export interface CorpusHit {
+  chunk_id: string;
+  ruta: string;
+  texto: string;
+  texto_contexto: string;
+  score: number;
+  metodo: 'estructurado' | 'hibrido';
+  doc: {
+    titulo: string;
+    numero: string | null;
+    tipo: string;
+    url: string;
+    vigencia: string;
+    autoridad: string;
+    fecha_consulta: string | null;
+  };
+}
+
+export interface CorpusSearch {
+  q: string;
+  count: number;
+  ms: number;
+  hits: CorpusHit[];
+}
+
 export interface Contrato {
   id_contrato: string;
   nombre_entidad: string;
@@ -111,6 +136,13 @@ export const api = {
   informe: (id: string) => j<Informe>(`${API}/report/${id}`),
   chunk: (id: string) => j<Chunk>(`${API}/search/chunk/${id}`),
   cobertura: () => j<Cobertura>(`${API}/search/documentos`),
+  search: (q: string, filtros: { tipo?: string; emisor?: string; jurisdiccion?: string; topK?: number } = {}) => {
+    const params = new URLSearchParams({ q, top_k: String(filtros.topK ?? 10) });
+    if (filtros.tipo) params.set('tipo', filtros.tipo);
+    if (filtros.emisor) params.set('emisor', filtros.emisor);
+    if (filtros.jurisdiccion) params.set('jurisdiccion', filtros.jurisdiccion);
+    return j<CorpusSearch>(`${API}/search?${params.toString()}`);
+  },
   contratos: (p: Record<string, string>) => {
     const q = new URLSearchParams(p).toString();
     return j<{ contratos: Contrato[]; count: number; fecha_consulta: string; advertencia: string }>(

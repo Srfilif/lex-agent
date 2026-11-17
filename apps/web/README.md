@@ -1,12 +1,15 @@
 # lex-web — Frontend React
 
-App del chat jurídico: auth (login/registro/TOTP/sesiones), shell con
-sidebar de chats, chat con streaming SSE y Markdown propio, proyectos con
-archivos, cuenta (perfil/preferencias/seguridad/facturación/admin) y visor
-de fragmentos con citas.
+Espacio de trabajo LegalTech: inicio, asistente jurídico con streaming SSE,
+panel de fuentes, investigación, biblioteca del corpus, documentos, cuenta y
+administración.
 
-React 19 sin router: navegación por estado local (+ hash `#/storage` para
-archivos). Cero dependencias de UI.
+React 19 + Vite + TypeScript estricto. La navegación usa History API propia:
+`/login`, `/register`, `/forgot-password`, `/reset-password`, `/inicio`,
+`/chat`, `/investigar`, `/biblioteca`, `/storage`, `/cuenta`, `/admin` y
+`/s/:token` (compartido). La UI usa shadcn/ui sobre Tailwind CSS v4, con los
+tokens del sistema visual existente como fuente de verdad; los iconos son de
+`lucide-react`.
 
 ## Scripts (`npm run` desde `apps/web/`)
 
@@ -21,12 +24,22 @@ archivos). Cero dependencias de UI.
 
 ## Estructura (`src/`)
 
-- `App.tsx`, `main.tsx`, `styles.css` — shell.
-- `api.ts`, `chatApi.ts`, `auth.ts`, `cuenta.ts` — clientes HTTP.
-- `components/` — `ChatShell`, `Sidebar`, `AuthView`, `Cuenta` (+ `cuenta/`),
-  `Facturacion`, `AdminPanel`, `ArchivosProyecto`, `Storage`, `Fragmento`,
-  `Markdown`, `Secop`, `Investigar`, `SharedView`, presentacionales.
-- `shared/` — utilidades (tema, etc.).
+- `App.tsx`, `main.tsx`, `index.css`, `styles.css` — shell, rutas, tema y design system.
+- `components/ui/` — primitivas shadcn/ui; `components.json` y `lib/utils.ts` — configuración.
+- `api.ts`, `chatApi.ts`, `auth.ts`, `cuenta.ts` — clientes HTTP tipados.
+- `components/AppShell.tsx` — rail, topbar, buscador global (Ctrl/⌘+K).
+- `components/Dashboard.tsx` — inicio con datos reales.
+- `components/Biblioteca.tsx` — corpus y búsqueda de fragmentos.
+- `components/` — chat (`ChatShell`, `Sidebar`, `MessageBubble`, `Composer`,
+  `ThreadHead`, `WelcomePane`, `Fragmento`, `Markdown`), `Investigar`,
+  `Storage`, `ArchivosProyecto`, `Cuenta` (+ `cuenta/`), `Facturacion`,
+  `AdminPanel`, `AuthView`, `SharedView`, `Secop`, `CorpusFooter`.
+- `shared/` — utilidades de formato y tema.
 
-Nota: el `Dockerfile` sirve con `vite preview` (válido para demo; para
-producción real usar un servidor estático dedicado).
+El detalle de arquitectura, tokens, responsive, accesibilidad y pendientes
+está en [docs/frontend/ARQUITECTURA.md](../../docs/frontend/ARQUITECTURA.md).
+
+Nota: el `Dockerfile` sirve con `vite preview`, que aplica fallback SPA a
+`index.html` (necesario para abrir `/login` o `/chat` directamente). En
+producción, el servidor estático debe configurar la misma reescritura hacia
+`index.html`.

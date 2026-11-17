@@ -1,11 +1,27 @@
 import { useEffect, useState } from 'react';
+import {
+  Activity,
+  BookOpen,
+  Download,
+  FileSearch,
+  Landmark,
+  Loader2,
+  Scale,
+  Search,
+  ShieldCheck,
+  TriangleAlert,
+} from 'lucide-react';
 import type { Informe } from '../api';
 import { API, api } from '../api';
 import Fragmento from './Fragmento';
 import Secop from './Secop';
+import { Alert, AlertDescription } from './ui/alert';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 
 // Vista Investigar: comportamiento idéntico al App.tsx original
-// (investigar → informe, Secop, Fragmento).
+// (investigar → informe, Secop, Fragmento), con composición renovada.
 
 const MARCA: Record<string, { mark: string; label: string }> = {
   verificada: { mark: '✓', label: 'verificada' },
@@ -69,80 +85,205 @@ export default function Investigar(): React.ReactElement {
   }
 
   return (
-    <>
-      <div className="investigar-head">
-        <p className="salud" title={API}>API: {salud}</p>
+    <div className="page">
+      <div className="page-head">
+        <div>
+          <span className="eyebrow">
+            <FileSearch size={13} /> Investigación avanzada
+          </span>
+          <h1 className="page-title">Investigación jurídica</h1>
+          <p className="page-sub">
+            Plantea una pregunta compleja y obtén un informe con normas, jurisprudencia y contratos
+            citados. Cada afirmación se clasifica según el respaldo documental encontrado.
+          </p>
+        </div>
+        <div className="page-actions">
+          <Badge variant="outline" className="gap-1.5 bg-card px-2 py-1 text-[10px] font-normal text-muted-foreground" title={API}>
+            <span className={`status-dot${salud === 'ok' ? '' : ' warn'}`} />
+            API: {salud}
+          </Badge>
+        </div>
       </div>
-      <div className="layout">
-        <main>
-          <section>
-            <h2>Investigar</h2>
-            <form className="pregunta" onSubmit={(e) => void investigar(e)}>
-              <input
-                value={pregunta}
-                onChange={(e) => setPregunta(e.target.value)}
-                placeholder="Pregunta sobre contratación estatal, normas o contratos…"
-              />
-              <button type="submit" disabled={loading}>{loading ? 'Investigando…' : 'Investigar'}</button>
-            </form>
-            <div className="ejemplos">
+
+      <section className="invest-hero">
+        <form className="invest-form" onSubmit={(e) => void investigar(e)}>
+          <label
+            htmlFor="pregunta-investigacion"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Scale size={14} /> Pregunta de investigación
+          </label>
+          <Textarea
+            id="pregunta-investigacion"
+            value={pregunta}
+            onChange={(e) => setPregunta(e.target.value)}
+            placeholder="Ej.: ¿Bajo qué condiciones puede la administración celebrar un contrato de prestación de servicios sin convocatoria pública?"
+            className="min-h-28"
+          />
+          <div className="invest-form-foot">
+            <div className="ejemplos" style={{ margin: 0 }}>
               {EJEMPLOS.map((q) => (
-                <button key={q} type="button" className="ejemplo" onClick={() => setPregunta(q)}>{q}</button>
+                <button key={q} type="button" className="ejemplo" onClick={() => setPregunta(q)}>
+                  {q}
+                </button>
               ))}
             </div>
-            {paso && <p className="meta" role="status">{paso}</p>}
-            {error && <p className="error">{error}</p>}
-          </section>
+            <Button type="submit" disabled={loading || !pregunta.trim()}>
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Investigando…
+                </>
+              ) : (
+                <>
+                  <Search /> Investigar
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+        {paso && (
+          <p className="meta" role="status" style={{ marginTop: 'var(--space-3)' }}>
+            <Activity size={13} style={{ verticalAlign: '-2px' }} /> {paso}
+          </p>
+        )}
+        {error && (
+          <Alert variant="destructive" className="mt-3 border-destructive/30 bg-destructive/5">
+            <TriangleAlert />
+            <AlertDescription>La investigación falló: {error}</AlertDescription>
+          </Alert>
+        )}
+      </section>
 
-          {informe && (
-            <section>
+      <div className="layout">
+        <div>
+          {informe ? (
+            <section className="panel panel-pad">
               <div className="informe-head">
-                <h2>Informe</h2>
-                <button type="button" onClick={descargar}>Descargar Markdown</button>
+                <div>
+                  <span className="eyebrow">
+                    <ShieldCheck size={13} /> Informe verificado
+                  </span>
+                  <h2 className="page-title" style={{ fontSize: 'var(--text-xl)' }}>
+                    Informe de investigación
+                  </h2>
+                </div>
+                <Button type="button" variant="outline" onClick={descargar}>
+                  <Download />
+                  Descargar Markdown
+                </Button>
               </div>
               <p className="pregunta-hecha">{informe.pregunta}</p>
-              <h3>Resumen</h3>
-              <p>{informe.resumen || '—'}</p>
-              <h3>Afirmaciones ({informe.verificacion.afirmaciones.length})</h3>
-              {informe.verificacion.afirmaciones.map((a) => {
-                const m = MARCA[a.veredicto] ?? { mark: '?', label: a.veredicto };
-                return (
-                  <article key={a.idx} className="afirmacion">
-                    <p><span className={`veredicto v-${a.veredicto}`}>{m.mark} {m.label}</span></p>
-                    <p>{a.texto}</p>
-                    <div className="citas">
-                      {a.chunk_ids.map((id) => (
-                        <button key={id} type="button" className="cita" onClick={() => setCita(id)}>
-                          {rutaCorta(informe, id)} · {id.slice(0, 8)}
-                        </button>
-                      ))}
-                      {a.secop_refs.map((ref) => (
-                        <span key={ref} className="cita secop" title="Contrato SECOP citado">{ref}</span>
-                      ))}
-                      {a.chunk_ids.length === 0 && a.secop_refs.length === 0 && (
-                        <span className="meta">sin citas</span>
-                      )}
-                    </div>
-                    {a.motivo_soporte && <p className="meta">Juez: {a.motivo_soporte}</p>}
-                  </article>
-                );
-              })}
+
+              <div className="informe-section">
+                <h3>Resumen</h3>
+                <p style={{ lineHeight: 1.7 }}>{informe.resumen || '—'}</p>
+              </div>
+
+              <div className="informe-section">
+                <h3>
+                  Afirmaciones y respaldo ({informe.verificacion.afirmaciones.length})
+                </h3>
+                <div className="afirmaciones">
+                  {informe.verificacion.afirmaciones.map((a) => {
+                    const m = MARCA[a.veredicto] ?? { mark: '?', label: a.veredicto };
+                    return (
+                      <article key={a.idx} className="afirmacion">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span className={`veredicto v-${a.veredicto}`}>
+                            {m.mark} {m.label}
+                          </span>
+                          <span className="meta" style={{ fontSize: 'var(--text-2xs)' }}>
+                            Afirmación {a.idx + 1}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: 'var(--text-sm)', lineHeight: 1.65 }}>{a.texto}</p>
+                        <div className="citas" style={{ marginTop: 0 }}>
+                          {a.chunk_ids.map((id) => (
+                            <Button
+                              key={id}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 gap-1 px-2 text-[11px]"
+                              onClick={() => setCita(id)}
+                              title="Abrir el fragmento que respalda esta afirmación"
+                            >
+                              <BookOpen />
+                              {rutaCorta(informe, id)} · {id.slice(0, 8)}
+                            </Button>
+                          ))}
+                          {a.secop_refs.map((ref) => (
+                            <span key={ref} className="cita secop" title="Contrato SECOP citado">
+                              <Landmark size={11} />
+                              {ref}
+                            </span>
+                          ))}
+                          {a.chunk_ids.length === 0 && a.secop_refs.length === 0 && (
+                            <span className="meta" style={{ fontSize: 'var(--text-2xs)' }}>
+                              Sin citas documentales
+                            </span>
+                          )}
+                        </div>
+                        {a.motivo_soporte && (
+                          <p className="meta" style={{ fontSize: 'var(--text-xs)' }}>
+                            <TriangleAlert
+                              size={12}
+                              style={{ verticalAlign: '-2px', marginRight: 4 }}
+                            />
+                            Verificación: {a.motivo_soporte}
+                          </p>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+
               <details>
-                <summary>Traza y costo (investigación {informe.id.slice(0, 8)}, ${informe.costo_usd} USD)</summary>
-                <ul>
+                <summary>
+                  Traza y costo · investigación {informe.id.slice(0, 8)} · ${informe.costo_usd} USD
+                </summary>
+                <ul className="historial">
                   {informe.traza.map((p) => (
-                    <li key={p.paso}>Paso {p.paso}: {p.tool_calls.map((t) => t.name).join(', ')}</li>
+                    <li key={p.paso}>
+                      Paso {p.paso}: {p.tool_calls.map((t) => t.name).join(', ') || 'sin herramientas'}
+                    </li>
                   ))}
                 </ul>
               </details>
+
+              <Alert className="mt-4 border-warn/30 bg-warn/5">
+                <TriangleAlert className="text-[var(--warn)]" />
+                <AlertDescription>
+                  El informe es un apoyo a la investigación. Puede contener interpretaciones
+                  generadas por IA; contrasta las citas y la vigencia con las fuentes oficiales.
+                </AlertDescription>
+              </Alert>
+            </section>
+          ) : (
+            <section className="panel">
+              <div className="empty-state" style={{ padding: 'var(--space-10) var(--space-5)' }}>
+                <span className="empty-icon">
+                  <FileSearch size={18} />
+                </span>
+                <strong>Sin informe todavía</strong>
+                <p>
+                  Formula una pregunta jurídica concreta. El agente buscará normas, jurisprudencia y
+                  contratos, y verificará las citas antes de responder.
+                </p>
+              </div>
             </section>
           )}
 
-          <Secop />
-        </main>
+          <div style={{ marginTop: 'var(--space-6)' }}>
+            <Secop />
+          </div>
+        </div>
+
         <Fragmento chunkId={cita} />
       </div>
-    </>
+    </div>
   );
 }
 

@@ -2,22 +2,25 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { getSharedConversation, type SharedCitation, type SharedMessage } from '../chatApi';
 import Markdown from './Markdown';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
 
 // Vista pública de enlace compartido (B9). Sin login: el token opaco es la
 // credencial y se revoca con "Revocar" en el hilo original.
 //
-// Ruta elegida: la misma SPA decide por estado inicial, sin router nuevo:
-//   - ?share=TOKEN en la query, o
-//   - #/s/TOKEN en el hash.
-// Ambas formas se documentan aquí y en el marcador que se copia al compartir.
+// Ruta canónica: /s/TOKEN. Se acepta ?share=TOKEN por compatibilidad con
+// enlaces antiguos; App.tsx los normaliza antes de montar esta vista.
 // Si no hay token, esta vista no se monta (ver App.tsx).
 
-export function leerTokenCompartido(): string | null {
+export function leerTokenCompartido(
+  ruta = `${window.location.pathname}${window.location.search}`,
+): string | null {
   try {
-    const q = new URLSearchParams(window.location.search).get('share');
+    const url = new URL(ruta, window.location.origin);
+    const path = url.pathname.match(/^\/s\/([^/]+)\/?$/);
+    if (path) return decodeURIComponent(path[1]);
+    const q = url.searchParams.get('share');
     if (q && q.trim()) return q.trim();
-    const h = window.location.hash.match(/^#\/s\/([A-Za-z0-9_\-]+)/);
-    if (h) return h[1];
   } catch {
     // URL ilegible: sin token
   }
@@ -69,9 +72,11 @@ export default function SharedView({ token }: { token: string }): ReactNode {
     return (
       <div className="share-publica">
         <h2>Enlace compartido</h2>
-        <p className="error" role="alert">
-          {error.includes('revocado') || error.includes('válido') ? error : 'enlace no válido o revocado'}
-        </p>
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+          <AlertDescription>
+            {error.includes('revocado') || error.includes('válido') ? error : 'enlace no válido o revocado'}
+          </AlertDescription>
+        </Alert>
         <p className="meta">Pide al dueño un enlace nuevo o verifica que no haya sido revocado.</p>
       </div>
     );
@@ -97,9 +102,16 @@ export default function SharedView({ token }: { token: string }): ReactNode {
               {m.citations.length > 0 && (
                 <div className="citas">
                   {m.citations.map((c) => (
-                    <button key={c.n} type="button" className="cita" onClick={() => setCita(c)}>
+                    <Button
+                      key={c.n}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-auto px-2 py-1 text-xs"
+                      onClick={() => setCita(c)}
+                    >
                       [{c.n}] {c.ruta.slice(0, 60)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -113,9 +125,9 @@ export default function SharedView({ token }: { token: string }): ReactNode {
           <p className="ruta">{cita.ruta}</p>
           <p className="meta">{cita.titulo}</p>
           <p className="meta">Fuente completa disponible para el dueño en la app.</p>
-          <button type="button" className="mini" onClick={() => setCita(null)}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setCita(null)}>
             Cerrar
-          </button>
+          </Button>
         </aside>
       )}
     </div>

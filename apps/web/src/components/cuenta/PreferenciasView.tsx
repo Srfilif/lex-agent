@@ -25,6 +25,10 @@ const ZONAS = [
 ];
 import RecuerdosView from './RecuerdosView';
 import { aplicarTema } from '../../shared/tema';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Checkbox } from '../ui/checkbox';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export default function PreferenciasView({ onPrefs }: { onPrefs: (p: Preferencias) => void }): React.ReactElement {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
@@ -77,48 +81,62 @@ export default function PreferenciasView({ onPrefs }: { onPrefs: (p: Preferencia
     <>
       <Bloque titulo="Apariencia e idioma">
         <div className="fila">
-          <label>
+          <label className="flex flex-col gap-1.5">
             Tema (se aplica de inmediato)
-            <select
+            <Select
               value={prefs.theme}
               disabled={busy}
-              onChange={(e) => void guardar({ theme: e.target.value })}
+              onValueChange={(value) => void guardar({ theme: value })}
             >
-              <option value="light">Claro</option>
-              <option value="dark">Oscuro</option>
-              <option value="system">Sistema</option>
-            </select>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Claro</SelectItem>
+                <SelectItem value="dark">Oscuro</SelectItem>
+                <SelectItem value="system">Sistema</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
-          <label>
+          <label className="flex flex-col gap-1.5">
             Idioma (se guarda; la interfaz sigue en español por ahora)
-            <select value={prefs.language} disabled={busy} onChange={(e) => void guardar({ language: e.target.value })}>
-              <option value="es">Español</option>
-              <option value="en">English</option>
-            </select>
+            <Select
+              value={prefs.language}
+              disabled={busy}
+              onValueChange={(value) => void guardar({ language: value })}
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="es">Español</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
-          <label>
+          <label className="flex flex-col gap-1.5">
             Zona horaria (se guarda; los horarios se muestran tal cual los entrega el servidor)
-            <select
+            <Select
               value={ZONAS.includes(prefs.timezone) ? prefs.timezone : 'America/Bogota'}
               disabled={busy}
-              onChange={(e) => void guardar({ timezone: e.target.value })}
+              onValueChange={(value) => void guardar({ timezone: value })}
             >
-              {ZONAS.map((z) => (
-                <option key={z} value={z}>{z}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ZONAS.map((z) => (
+                  <SelectItem key={z} value={z}>{z}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </Bloque>
       <Bloque titulo="Notificaciones">
-        <label className="check">
-          <input
-            type="checkbox"
+        <label className="check flex items-start gap-2">
+          <Checkbox
             checked={prefs.notifications.emailSecurity}
             disabled={busy}
-            onChange={(e) => void guardar({ notifications: { emailSecurity: e.target.checked } })}
+            onCheckedChange={(checked) =>
+              void guardar({ notifications: { emailSecurity: checked === true } })
+            }
           />
-          Recibir avisos de seguridad por correo (se guarda la preferencia)
+          <span>Recibir avisos de seguridad por correo (se guarda la preferencia)</span>
         </label>
       </Bloque>
       <Bloque titulo="Asistente (IA)">
@@ -127,9 +145,9 @@ export default function PreferenciasView({ onPrefs }: { onPrefs: (p: Preferencia
           lo rechaza y el chat sigue con el modelo por defecto.
         </p>
         <div className="fila">
-          <label>
+          <label className="flex flex-col gap-1.5">
             Modelo preferido (vacío = por defecto del servidor)
-            <input
+            <Input
               defaultValue={prefs.ai.model ?? ''}
               key={prefs.ai.model ?? 'vacio'}
               disabled={busy}
@@ -141,41 +159,54 @@ export default function PreferenciasView({ onPrefs }: { onPrefs: (p: Preferencia
               }}
             />
           </label>
-          <label>
+          <label className="flex flex-col gap-1.5">
             Detalle (se guarda)
-            <select
+            <Select
               value={prefs.ai.detail}
               disabled={busy}
-              onChange={(e) => void guardar({ ai: { detail: e.target.value } })}
+              onValueChange={(value) => void guardar({ ai: { detail: value } })}
             >
-              <option value="breve">Breve</option>
-              <option value="normal">Normal</option>
-              <option value="detallado">Detallado</option>
-            </select>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="breve">Breve</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="detallado">Detallado</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
-          <label>
+          <label className="flex flex-col gap-1.5">
             Formato de respuesta (se guarda)
-            <select
+            <Select
               value={prefs.ai.responseFormat}
               disabled={busy}
-              onChange={(e) => void guardar({ ai: { responseFormat: e.target.value } })}
+              onValueChange={(value) => void guardar({ ai: { responseFormat: value } })}
             >
-              <option value="markdown">Markdown</option>
-              <option value="texto">Texto</option>
-            </select>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="markdown">Markdown</SelectItem>
+                <SelectItem value="texto">Texto</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
         </div>
-        <label className="check">
-          <input
-            type="checkbox"
+        <label className="check flex items-start gap-2">
+          <Checkbox
             checked={prefs.ai.crossMemory}
             disabled={busy}
-            onChange={(e) => void guardar({ ai: { crossMemory: e.target.checked } })}
+            onCheckedChange={(checked) => void guardar({ ai: { crossMemory: checked === true } })}
           />
-          Memoria entre chats: recordar hechos en todos los hilos (se puede desactivar y borrar)
+          <span>Memoria entre chats: recordar hechos en todos los hilos (se puede desactivar y borrar)</span>
         </label>
-        {err && <p className="error" role="alert">{err}</p>}
-        {msg && <p className="ok">{msg}</p>}
+        {err && (
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        {msg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{msg}</AlertDescription>
+          </Alert>
+        )}
       </Bloque>
       <Bloque titulo="Memoria">
         <RecuerdosView />

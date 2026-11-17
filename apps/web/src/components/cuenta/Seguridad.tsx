@@ -11,6 +11,10 @@ import {
   type TotpEstado,
 } from '../../cuenta';
 import Bloque, { describeError } from './comun';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Input } from '../ui/input';
 
 export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => void }): React.ReactElement {
   const [estado, setEstado] = useState<TotpEstado | null>(null);
@@ -149,9 +153,9 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
           Estado: <strong>{estado === null ? 'cargando…' : estado === 'active' ? `activado (${restantes} códigos de recuperación disponibles)` : estado === 'pending' ? 'pendiente de confirmar' : 'no configurado'}</strong>
         </p>
         {estado === 'disabled' && (
-          <button type="button" onClick={() => void iniciar()} disabled={busy}>
+          <Button type="button" onClick={() => void iniciar()} disabled={busy}>
             {busy ? 'Iniciando…' : 'Activar 2FA'}
-          </button>
+          </Button>
         )}
         {otpauth && (
           <div className="totp-caja">
@@ -159,30 +163,34 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
               No usamos QR (la app no incluye librerías nuevas): copia el secreto en tu app
               autenticadora con entrada manual, o abre el enlace en el teléfono.
             </p>
-            <label>
+            <label className="flex flex-col gap-1.5">
               Secreto (copiable)
-              <input readOnly value={secreto} onFocus={(e) => e.target.select()} />
+              <Input readOnly value={secreto} onFocus={(e) => e.target.select()} />
             </label>
             <div className="fila">
-              <button
+              <Button
                 type="button"
-                className="secundario-claro"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   void navigator.clipboard?.writeText(secreto).catch(() => undefined);
                 }}
               >
                 Copiar secreto
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="secundario-claro"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   void navigator.clipboard?.writeText(otpauth).catch(() => undefined);
                 }}
               >
                 Copiar URI otpauth
-              </button>
-              <a className="boton-enlace" href={otpauth}>Abrir en la app autenticadora</a>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <a href={otpauth}>Abrir en la app autenticadora</a>
+              </Button>
             </div>
             <p className="meta">
               URI completa: <code className="romper">{otpauth}</code>
@@ -191,13 +199,13 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
               Entrada manual: cuenta nueva → clave = el secreto de arriba, tipo “basado en tiempo”,
               6 dígitos. Luego confirma con el código actual.
             </p>
-            <label>
+            <label className="flex flex-col gap-1.5">
               Código de 6 dígitos
-              <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="123456" autoComplete="one-time-code" />
+              <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="123456" autoComplete="one-time-code" />
             </label>
-            <button type="button" onClick={() => void confirmar()} disabled={busy}>
+            <Button type="button" onClick={() => void confirmar()} disabled={busy}>
               {busy ? 'Confirmando…' : 'Confirmar y activar'}
-            </button>
+            </Button>
           </div>
         )}
         {recuperacion.length > 0 && (
@@ -209,21 +217,22 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
               ))}
             </ul>
             <div className="fila">
-              <button
+              <Button
                 type="button"
-                className="secundario-claro"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   void navigator.clipboard?.writeText(recuperacion.join('\n')).catch(() => undefined);
                 }}
               >
                 Copiar códigos
-              </button>
+              </Button>
             </div>
-            <label className="check">
-              <input type="checkbox" checked={guarde} onChange={(e) => setGuarde(e.target.checked)} />
-              Los guardé en un lugar seguro
+            <label className="check flex items-start gap-2">
+              <Checkbox checked={guarde} onCheckedChange={(checked) => setGuarde(checked === true)} />
+              <span>Los guardé en un lugar seguro</span>
             </label>
-            {!guarde && <p className="error">Confirma que los guardaste: no volverán a mostrarse.</p>}
+            {!guarde && <p className="text-xs text-destructive">Confirma que los guardaste: no volverán a mostrarse.</p>}
           </div>
         )}
         {estado === 'active' && (
@@ -232,47 +241,60 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
               Regenerar invalida los códigos anteriores sin cerrar sesiones; desactivar pide
               contraseña + código actual (TOTP o recuperación) y cierra las demás sesiones.
             </p>
-            <label>
+            <label className="flex flex-col gap-1.5">
               Contraseña (para regenerar o desactivar)
-              <input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
+              <Input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
             </label>
-            <label>
+            <label className="flex flex-col gap-1.5">
               Código actual (TOTP o recuperación)
-              <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="123456" autoComplete="one-time-code" />
+              <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="123456" autoComplete="one-time-code" />
             </label>
             <div className="fila">
-              <button type="button" className="secundario-claro" onClick={() => void regenerar()} disabled={busy}>
+              <Button type="button" variant="outline" onClick={() => void regenerar()} disabled={busy}>
                 Regenerar códigos
-              </button>
-              <button type="button" className="secundario-claro peligro" onClick={() => void desactivar()} disabled={busy}>
+              </Button>
+              <Button type="button" variant="destructive" onClick={() => void desactivar()} disabled={busy}>
                 Desactivar 2FA
-              </button>
+              </Button>
             </div>
           </>
         )}
-        {msg && <p className="ok">{msg}</p>}
-        {err && <p className="error" role="alert">{err}</p>}
+        {msg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{msg}</AlertDescription>
+          </Alert>
+        )}
+        {err && (
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
       </Bloque>
       <Bloque titulo="Cambiar contraseña">
         <p className="meta">Pide la contraseña actual. Al cambiarla, las demás sesiones se cierran.</p>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Contraseña actual
-          <input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
+          <Input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
         </label>
-        <label>
+        <label className="flex flex-col gap-1.5">
           Contraseña nueva
-          <input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} placeholder="Mínimo 8 caracteres" />
+          <Input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} placeholder="Mínimo 8 caracteres" />
         </label>
-        {claveMsg && <p className="ok">{claveMsg}</p>}
-        <button type="button" onClick={() => void cambiar()} disabled={busy || !actual || nueva.length < 8}>
+        {claveMsg && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <AlertDescription className="text-foreground">{claveMsg}</AlertDescription>
+          </Alert>
+        )}
+        <Button type="button" onClick={() => void cambiar()} disabled={busy || !actual || nueva.length < 8}>
           {busy ? 'Guardando…' : 'Cambiar contraseña'}
-        </button>
+        </Button>
       </Bloque>
       <Bloque titulo="Cerrar todas las sesiones">
         <p className="meta">Cierra esta y todas las demás sesiones (logout-all). Volverás al inicio de sesión.</p>
-        <button
+        <Button
           type="button"
-          className="secundario-claro peligro"
+          variant="destructive"
+          className="w-fit"
           onClick={() => {
             void cerrarTodasSesiones().catch(() => undefined).finally(() => {
               clearSession();
@@ -281,7 +303,7 @@ export default function Seguridad({ onSesionCerrada }: { onSesionCerrada: () => 
           }}
         >
           Cerrar todas las sesiones
-        </button>
+        </Button>
       </Bloque>
     </>
   );
