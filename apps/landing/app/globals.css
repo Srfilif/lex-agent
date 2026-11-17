@@ -1,0 +1,158 @@
+/* Lex Colombia — landing editorial. Tokens y base global. */
+
+:root {
+  color-scheme: light;
+  --paper: #f4f3ed;
+  --paper-2: #eae9df;
+  --paper-3: #deddd2;
+  --ink: #141814;
+  --ink-soft: #4c554d;
+  --muted: #6f786f;
+  --rule: rgba(20, 24, 20, 0.16);
+  --rule-strong: rgba(20, 24, 20, 0.32);
+  --accent: #1d5643;
+  --gold: #7b5a2b;
+  --dark: #0d1a13;
+  --dark-soft: #b9c9bf;
+  --display: var(--font-display), "Iowan Old Style", "Palatino Linotype",
+    Palatino, Georgia, "Times New Roman", serif;
+  --sans: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Consolas,
+    "Liberation Mono", monospace;
+  --max: 1400px;
+  --gutter: clamp(20px, 5vw, 64px);
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0b0f0d;
+  --paper-2: #121714;
+  --paper-3: #19201a;
+  --ink: #e9ede8;
+  --ink-soft: #c4cbc4;
+  --muted: #98a29a;
+  --rule: rgba(233, 237, 232, 0.16);
+  --rule-strong: rgba(233, 237, 232, 0.32);
+  --accent: #91c7ab;
+  --gold: #d4b378;
+  --dark: #080c09;
+  --dark-soft: #b9c9bf;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Grano fino de papel: textura, no un gradiente decorativo. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+:root[data-theme="dark"] body::before {
+  opacity: 0.14;
+  mix-blend-mode: soft-light;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+blockquote,
+figure,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 2000;
+  padding: 12px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+}
+
+.skip-link:focus {
+  left: 16px;
+  top: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
