@@ -3,11 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "node scripts/dev.mjs",
     "dev:api": "npm --prefix apps/api run start:dev",
     "dev:web": "npm --prefix apps/web run dev",
+    "dev:landing": "npm --prefix apps/landing run dev",
+    "build:landing": "npm --prefix apps/landing run build",
+    "typecheck:landing": "npm --prefix apps/landing run typecheck",
+    "migrate": "npm --prefix apps/api run migrate",
+    "seed": "npm --prefix apps/api run seed",
     "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
     "typecheck": "npm --prefix apps/api run typecheck && npm --prefix apps/web run typecheck",
     "test:unit": "npm --prefix apps/api run test:unit",
+    "test:architecture": "npm --prefix apps/api run test:architecture",
+    "test:sqlite": "npm --prefix apps/api run test:sqlite",
     "audit": "npm --prefix apps/api audit --audit-level=moderate && npm --prefix apps/web audit --audit-level=moderate"
   },
   "engines": {

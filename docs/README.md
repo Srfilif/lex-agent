@@ -3,6 +3,7 @@
 ## Arquitectura (`arquitectura/`)
 
 - `SYSTEM_ARCHITECTURE.md` — arquitectura del sistema.
+- `ARQUITECTURA_DDD.md` — reglas DDD/Clean Architecture, puertos y test de límites.
 - `TECH_STACK.md` — stack tecnológico y decisiones.
 - `RAG_DESIGN.md` — diseño del RAG (metadatos, fragmentación, retrieval).
 - `DATABASE_SCHEMA.md` — resumen del esquema (fuente de verdad: `db/init.sql`).
@@ -20,6 +21,8 @@
 - `PUBLIC_DATA_SOURCES.md` — fuentes públicas (IDs pendientes de verificar).
 - `RESEARCH_REFERENCES.md` — referencias de investigación.
 - `OPEN_QUESTIONS.md` — preguntas abiertas de producto.
+- `REDISENO_LEGALTECH_2026-11.md` — auditoría, cambios y pendientes del
+  rediseño de plataforma.
 
 ## Operaciones (`operaciones/`)
 
@@ -29,6 +32,8 @@
 ## Frontend (`frontend/`)
 
 - `ARQUITECTURA.md` — arquitectura del frontend.
+- Landing pública: app Next independiente en `apps/landing`
+  (ver `apps/landing/README.md`).
 
 ## Archivo (`archive/`)
 
