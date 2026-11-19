@@ -23,6 +23,7 @@ import {
   ResetPassword,
   VerifyEmail,
 } from '../../application/email-password';
+import { AccessPolicy } from '../../application/access';
 import { LoginUser, RegisterUser } from '../../application/register-login';
 import {
   ListSessions,
@@ -94,13 +95,26 @@ export class AuthController {
     private readonly list: ListSessions,
     private readonly revoke: RevokeSession,
     private readonly mfaVerify: VerifyMfaLogin,
+    private readonly access: AccessPolicy,
     @Inject(CONFIG) private readonly cfg: AppConfig,
   ) {}
+
+  @Get('access-mode')
+  async accessModeGet(): Promise<Record<string, unknown>> {
+    return this.access.state() as unknown as Record<string, unknown>;
+  }
 
   @Post('register')
   async registerPost(@Body() dto: RegisterDto, @Req() req: RawReq): Promise<{ message: string }> {
     return this.register.execute(
-      { email: dto.email, password: dto.password, displayName: dto.display_name },
+      {
+        email: dto.email,
+        password: dto.password,
+        displayName: dto.display_name,
+        termsAccepted: dto.terms_accepted,
+        privacyAccepted: dto.privacy_accepted,
+        accessCode: dto.access_code ?? null,
+      },
       metaOf(req),
     );
   }

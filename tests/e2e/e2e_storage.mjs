@@ -19,8 +19,8 @@ const j = (m, u, b, t) =>
     headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
     body: b ? JSON.stringify(b) : undefined,
   }).then(async (r) => ({ status: r.status, json: await r.json().catch(() => null) }));
-await j('POST', '/auth/register', { email, password: pass });
-const l = await j('POST', '/auth/login', { email, password: pass });
+await j('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+const l = await j('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const at = l.json?.access_token;
 if (!at) {
   console.log('FAIL siembra login ' + l.status);

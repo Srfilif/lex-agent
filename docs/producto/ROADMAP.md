@@ -1,4 +1,4 @@
-# ROADMAP — De LexAgent actual a un ChatGPT jurídico con RAG
+# ROADMAP — De Kelsyx actual a un ChatGPT jurídico con RAG
 
 Fecha: 2026-10-27. Estado verificado contra código (no contra memoria).
 Objetivo: sistema conversacional completo (chats, proyectos, archivos, streaming)

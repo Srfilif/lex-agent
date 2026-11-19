@@ -30,8 +30,8 @@ async function call(method, path, body, token) {
 
 const email = `acc${Date.now()}@lex.co`;
 const pass = 'clave-acc-123';
-await call('POST', '/auth/register', { email, password: pass });
-const login = await call('POST', '/auth/login', { email, password: pass });
+await call('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+const login = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const at = login.json.access_token;
 const uid = login.json.user.id;
 check('login humo cuenta', !!at);

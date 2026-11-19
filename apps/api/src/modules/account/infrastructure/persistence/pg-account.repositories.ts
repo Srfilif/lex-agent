@@ -115,7 +115,9 @@ export class PgAccountPrivacyRepository implements AccountPrivacyRepository {
     const q = (sql: string, params: unknown[] = []) => this.db.raw.query(sql, [userId, ...params]);
     const [u, prefs, sessions, totp, subs, subEvents, pays, usage, events, invs, mems] = await Promise.all([
       q(`SELECT id, email, display_name, email_verified_at IS NOT NULL AS verified,
-                status, role, created_at FROM users WHERE id = $1`),
+                status, role, created_at,
+                terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
+         FROM users WHERE id = $1`),
       q('SELECT data, updated_at FROM user_preferences WHERE user_id = $1'),
       q(`SELECT id, created_at, last_seen_at, expires_at, revoked_at, device_label
          FROM auth_sessions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`),

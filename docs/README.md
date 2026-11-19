@@ -28,6 +28,8 @@
 
 - `SECURITY_OPERATIONS.md` — checklist bloqueante pre-exposición, secretos,
   probes, logs y respuesta a incidentes.
+- `ACCESS_MODES.md` — modos de acceso (open/closed/whitelist/code), variables,
+  CLI, endpoints y gestión desde el panel Admin.
 
 ## Frontend (`frontend/`)
 

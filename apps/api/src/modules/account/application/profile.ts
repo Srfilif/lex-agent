@@ -101,7 +101,7 @@ export class RequestEmailChange {
     );
     await this.email.send({
       to: next,
-      subject: 'Confirme su nuevo correo de LexAgent',
+      subject: 'Confirme su nuevo correo de Kelsyx',
       text: `Su token de confirmación (válido 24h). Envíelo a POST /account/email/confirm como {"token": "..."}:\n${token}`,
     });
     await this.events.record({

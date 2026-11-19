@@ -1,6 +1,7 @@
 // DTOs de /account (perfil, preferencias, correo, borrado).
 import { Type } from 'class-transformer';
 import {
+  Equals,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -104,4 +105,16 @@ export class MemoryDto {
   @MinLength(1)
   @MaxLength(500)
   fact!: string;
+}
+
+export class ConsentsDto {
+  /** Aceptación contractual de los Términos (independiente de datos). */
+  @IsBoolean()
+  @Equals(true)
+  terms_accepted!: boolean;
+
+  /** Autorización de tratamiento de datos Ley 1581 (independiente). */
+  @IsBoolean()
+  @Equals(true)
+  privacy_accepted!: boolean;
 }

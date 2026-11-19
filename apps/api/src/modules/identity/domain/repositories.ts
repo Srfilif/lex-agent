@@ -4,6 +4,8 @@ import { TotpConfig } from './totp';
 import { NewUserProps, User } from './user';
 
 export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
+export const WHITELIST_REPOSITORY = Symbol('WHITELIST_REPOSITORY');
+export const ACCESS_CODE_REPOSITORY = Symbol('ACCESS_CODE_REPOSITORY');
 export const SESSION_REPOSITORY = Symbol('SESSION_REPOSITORY');
 export const ONE_TIME_TOKEN_REPOSITORY = Symbol('ONE_TIME_TOKEN_REPOSITORY');
 export const SECURITY_EVENT_REPOSITORY = Symbol('SECURITY_EVENT_REPOSITORY');
@@ -101,4 +103,45 @@ export interface RecoveryCodeRepository {
   /** Marca uso solo si estaba sin usar (anti doble-uso concurrente). */
   markUsed(id: string, now: Date): Promise<boolean>;
   countLeft(userId: string): Promise<number>;
+}
+
+export interface WhitelistEntry {
+  id: string;
+  pattern: string;
+  label: string | null;
+  createdAt: Date;
+}
+
+export interface WhitelistRepository {
+  list(): Promise<WhitelistEntry[]>;
+  patterns(): Promise<string[]>;
+  add(id: string, pattern: string, label: string | null, createdBy: string | null): Promise<WhitelistEntry>;
+  remove(id: string): Promise<boolean>;
+}
+
+export interface AccessCode {
+  id: string;
+  codeHash: string;
+  label: string | null;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: Date | null;
+  revokedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface AccessCodeRepository {
+  list(): Promise<AccessCode[]>;
+  findByHash(codeHash: string): Promise<AccessCode | null>;
+  insert(c: {
+    id: string;
+    codeHash: string;
+    label: string | null;
+    maxUses: number;
+    expiresAt: Date | null;
+    createdBy: string | null;
+  }): Promise<AccessCode>;
+  /** Consume un uso solo si quedan usos y no está revocado (atómico). */
+  consume(id: string): Promise<boolean>;
+  revoke(id: string, now: Date): Promise<boolean>;
 }

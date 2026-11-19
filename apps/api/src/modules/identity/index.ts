@@ -22,6 +22,10 @@ export {
   totpSinPendiente,
   totpYaActivo,
   operacionNoPermitida,
+  registroCerrado,
+  correoNoAutorizado,
+  codigoAccesoInvalido,
+  mantenimiento,
 } from './application/errors';
 export { TOKEN_GENERATOR, TokenGenerator } from './application/ports';
 export { USER_REPOSITORY, UserRepository } from './domain/repositories';
@@ -31,3 +35,4 @@ export { SESSION_REPOSITORY, SessionRepository } from './domain/repositories';
 export { RequestMeta, PASSWORD_HASHER, PasswordHasher, EMAIL_SENDER, EmailSender } from './application/ports';
 export { RATE_LIMITER, RateLimiter } from './application/ports';
 export { parseEmail, parseDisplayName } from './domain/value-objects';
+export { CURRENT_TERMS_VERSION, CURRENT_PRIVACY_VERSION } from './domain/consent-versions';

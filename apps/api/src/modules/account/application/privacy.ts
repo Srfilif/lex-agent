@@ -82,7 +82,7 @@ export class RequestAccountDelete {
     await this.privacy.markDeletionRequested(userId, now);
     await this.email.send({
       to: user.email,
-      subject: 'Confirme la eliminación de su cuenta LexAgent',
+      subject: 'Confirme la eliminación de su cuenta Kelsyx',
       text: `Eliminar su cuenta es irreversible. Su token (válido 24h), junto a su contraseña, en POST /account/delete-confirm:\n${token}`,
     });
     await this.events.record({

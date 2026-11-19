@@ -32,10 +32,28 @@ async function main(): Promise<void> {
         continue;
       }
       const now = new Date();
+      // Cuentas de prueba con consentimiento de la versión vigente (ficción
+      // de dev documentada: evita el ConsentGate en desarrollo local).
+      const { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } = await import(
+        '../modules/identity/domain/consent-versions'
+      );
       await db.query(
-        `INSERT INTO users (id, email, display_name, password_hash, email_verified_at, status, role, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$7)`,
-        [newUuid(), c.email, c.displayName, await hasher.hash(c.password), now, c.role, now],
+        `INSERT INTO users (id, email, display_name, password_hash, email_verified_at, status, role,
+          terms_version, terms_accepted_at, privacy_version, privacy_accepted_at, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,$9,$10,$11,$11)`,
+        [
+          newUuid(),
+          c.email,
+          c.displayName,
+          await hasher.hash(c.password),
+          now,
+          c.role,
+          CURRENT_TERMS_VERSION,
+          now,
+          CURRENT_PRIVACY_VERSION,
+          now,
+          now,
+        ],
       );
       console.log(`ok ${c.email} (${c.role})`);
     }

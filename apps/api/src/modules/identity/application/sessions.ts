@@ -26,6 +26,7 @@ import {
   TOKEN_GENERATOR,
   TokenGenerator,
 } from './ports';
+import { AccessPolicy } from './access';
 
 @Injectable()
 export class RefreshSession {
@@ -37,6 +38,7 @@ export class RefreshSession {
     @Inject(ACCESS_TOKENS) private readonly access: AccessTokens,
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
     @Inject(CONFIG) private readonly cfg: AppConfig,
+    private readonly gate: AccessPolicy,
   ) {}
 
   async execute(refreshToken: string, meta: RequestMeta): Promise<Record<string, unknown>> {
@@ -68,6 +70,7 @@ export class RefreshSession {
       await this.sessions.save(s);
       throw cuentaNoDisponible();
     }
+    await this.gate.checkSession(user, meta);
     const nextRefresh = this.gen.randomToken();
     const next = s.rotate(now, this.gen.uuid(), this.gen.sha256hex(nextRefresh));
     await this.sessions.save(s);

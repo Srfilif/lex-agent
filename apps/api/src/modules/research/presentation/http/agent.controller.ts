@@ -34,7 +34,7 @@ export class AgentController {
     @OptionalUser() user?: AuthUser,
   ): Promise<Record<string, unknown>> {
     if (!body.pregunta.trim()) throw new BadRequestException('falta pregunta');
-    if (!user && !this.cfg.allowAnonInvestigate) {
+    if (!user && (!this.cfg.allowAnonInvestigate || this.cfg.access.mode !== 'public')) {
       throw new UnauthorizedException('investigación anónima desactivada en este entorno');
     }
     return this.svc.execute(body.pregunta.trim(), body.max_pasos, user?.id ?? null);

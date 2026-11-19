@@ -12,8 +12,17 @@ export interface UserProps {
   emailVerifiedAt: Date | null;
   status: UserStatus;
   role: UserRole;
+  termsVersion: string | null;
+  termsAcceptedAt: Date | null;
+  privacyVersion: string | null;
+  privacyAcceptedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ConsentVersions {
+  termsVersion: string;
+  privacyVersion: string;
 }
 
 export interface NewUserProps {
@@ -22,6 +31,8 @@ export interface NewUserProps {
   displayName: string;
   passwordHash: string;
   now: Date;
+  /** Versiones aceptadas en el registro; ausente en cuentas previas a 019. */
+  consent?: ConsentVersions | null;
 }
 
 export class User {
@@ -36,6 +47,10 @@ export class User {
       emailVerifiedAt: null,
       status: 'active',
       role: 'user',
+      termsVersion: n.consent?.termsVersion ?? null,
+      termsAcceptedAt: n.consent ? n.now : null,
+      privacyVersion: n.consent?.privacyVersion ?? null,
+      privacyAcceptedAt: n.consent ? n.now : null,
       createdAt: n.now,
       updatedAt: n.now,
     });
@@ -116,5 +131,24 @@ export class User {
   markDeleted(now: Date): void {
     this.p.status = 'deleted';
     this.p.updatedAt = now;
+  }
+
+  /** Aceptación (o re-aceptación) de términos + autorización de datos. */
+  recordConsent(termsVersion: string, privacyVersion: string, now: Date): void {
+    this.p.termsVersion = termsVersion;
+    this.p.termsAcceptedAt = now;
+    this.p.privacyVersion = privacyVersion;
+    this.p.privacyAcceptedAt = now;
+    this.p.updatedAt = now;
+  }
+
+  /** Ambas aceptaciones presentes (términos y datos son independientes). */
+  get consentsComplete(): boolean {
+    return (
+      this.p.termsVersion !== null &&
+      this.p.termsAcceptedAt !== null &&
+      this.p.privacyVersion !== null &&
+      this.p.privacyAcceptedAt !== null
+    );
   }
 }

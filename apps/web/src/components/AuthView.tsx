@@ -3,11 +3,13 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   AuthHttpError,
   confirmarReset,
+  fetchAccessMode,
   getEmail,
   loginConMfa,
   register,
   solicitarReset,
   verificarMfa,
+  type AccessModeState,
 } from '../auth';
 import { Alert, AlertDescription } from './ui/alert';
 import { Button } from './ui/button';
@@ -18,8 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
+import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { PRIVACY_VERSION, TERMS_VERSION, URL_PRIVACIDAD, URL_TERMINOS } from '../legal';
 
 type Paso = 'clave' | 'mfa' | 'olvido' | 'reset';
 type ModoAuth = 'login' | 'register' | 'forgot' | 'reset';
@@ -91,6 +95,26 @@ export default function AuthView({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [aceptoTerminos, setAceptoTerminos] = useState(false);
+  const [autorizoDatos, setAutorizoDatos] = useState(false);
+  const [acceso, setAcceso] = useState<AccessModeState>({
+    mode: 'public',
+    code_required: false,
+    whitelist_required: false,
+  });
+  const [codigoAcceso, setCodigoAcceso] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    fetchAccessMode()
+      .then((a) => {
+        if (vivo) setAcceso(a);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   // La URL es la fuente de verdad para login/registro/recuperación.
   useEffect(() => {
@@ -113,6 +137,7 @@ export default function AuthView({
   function describe(e: unknown, defecto: string): string {
     if (e instanceof AuthHttpError) {
       if (e.status === 401) return 'Credenciales o código incorrectos.';
+      if (e.status === 403) return e.message || 'Acceso denegado por el modo de la plataforma.';
       if (e.status === 409) return 'Ese correo ya está registrado. Inicia sesión.';
       if (e.status === 429) return 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
       return `No se pudo completar: ${e.message}`;
@@ -147,10 +172,41 @@ export default function AuthView({
           onAuth();
         }
       } else {
-        const msg = await register(email.trim(), password);
+        if (acceso.mode === 'maintenance') {
+          setError('Plataforma en mantenimiento: solo administradores.');
+          setLoading(false);
+          return;
+        }
+        if (acceso.mode === 'closed') {
+          setError('El registro está cerrado por el momento.');
+          setLoading(false);
+          return;
+        }
+        if (acceso.code_required && !codigoAcceso.trim()) {
+          setError('Escribe tu código de acceso.');
+          setLoading(false);
+          return;
+        }
+        if (!aceptoTerminos || !autorizoDatos) {
+          setError('Marca ambas casillas: términos y autorización de datos son independientes.');
+          setLoading(false);
+          return;
+        }
+        const msg = await register(
+          email.trim(),
+          password,
+          {
+            termsAccepted: aceptoTerminos,
+            privacyAccepted: autorizoDatos,
+          },
+          acceso.code_required ? codigoAcceso : undefined,
+        );
         setNotice(`${msg} Ahora inicia sesión.`);
         setMode('login');
         setPassword('');
+        setAceptoTerminos(false);
+        setAutorizoDatos(false);
+        setCodigoAcceso('');
         onNavegar('/login');
       }
     } catch (err) {
@@ -378,7 +434,7 @@ export default function AuthView({
     <div className="auth-wrap">
       <AuthCard
         title={mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-        description="Lex Colombia AI · tus chats quedan guardados por cuenta."
+        description="Kelsyx · tus chats quedan guardados por cuenta."
       >
         <form className="space-y-4" onSubmit={submitClave}>
           <div className="space-y-1.5">
@@ -405,8 +461,79 @@ export default function AuthView({
               placeholder="Mínimo 8 caracteres"
             />
           </div>
+          {acceso.mode === 'maintenance' && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <AlertDescription className="text-foreground">
+                Plataforma en mantenimiento: solo administradores pueden entrar.
+              </AlertDescription>
+            </Alert>
+          )}
+          {mode === 'register' && acceso.mode === 'closed' && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <AlertDescription className="text-foreground">
+                El registro está cerrado por el momento. Si ya tienes cuenta, inicia sesión.
+              </AlertDescription>
+            </Alert>
+          )}
+          {mode === 'register' && acceso.whitelist_required && (
+            <p className="meta" style={{ fontSize: 'var(--text-xs)' }}>
+              Registro solo para correos autorizados. Si tu correo no está en la lista, pide
+              acceso al administrador.
+            </p>
+          )}
+          {mode === 'register' && acceso.code_required && (
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-access-code">Código de acceso</Label>
+              <Input
+                id="auth-access-code"
+                className="h-10"
+                type="text"
+                autoComplete="off"
+                value={codigoAcceso}
+                onChange={(e) => setCodigoAcceso(e.target.value)}
+                placeholder="XXXX-XXXX-XXXX"
+              />
+            </div>
+          )}
+          {mode === 'register' && (
+            <div className="space-y-2.5">
+              <label className="check flex items-start gap-2 text-xs">
+                <Checkbox
+                  checked={aceptoTerminos}
+                  onCheckedChange={(c) => setAceptoTerminos(c === true)}
+                />
+                <span>
+                  Acepto los{' '}
+                  <a href={URL_TERMINOS} target="_blank" rel="noreferrer">
+                    Términos del Servicio (v{TERMS_VERSION})
+                  </a>
+                </span>
+              </label>
+              <label className="check flex items-start gap-2 text-xs">
+                <Checkbox
+                  checked={autorizoDatos}
+                  onCheckedChange={(c) => setAutorizoDatos(c === true)}
+                />
+                <span>
+                  Autorizo el tratamiento de mis datos según la{' '}
+                  <a href={URL_PRIVACIDAD} target="_blank" rel="noreferrer">
+                    Política de Datos (v{PRIVACY_VERSION})
+                  </a>
+                </span>
+              </label>
+            </div>
+          )}
           <Avisos error={error} notice={notice} />
-          <Button type="submit" size="lg" className="h-10 w-full" disabled={loading}>
+          <Button
+            type="submit"
+            size="lg"
+            className="h-10 w-full"
+            disabled={
+              loading ||
+              (mode === 'register' &&
+                (acceso.mode === 'closed' || acceso.mode === 'maintenance'))
+            }
+          >
             {loading && <Loader2 className="animate-spin" />}
             {loading ? 'Espera…' : mode === 'login' ? 'Entrar' : 'Registrarme'}
           </Button>

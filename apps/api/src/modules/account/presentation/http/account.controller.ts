@@ -25,6 +25,7 @@ import {
   ExportAccount,
   RequestAccountDelete,
 } from '../../application/privacy';
+import { Consents } from '../../application/consents';
 import { GetPreferences, UpdatePreferences } from '../../application/preferences';
 import { Memories } from '../../application/memories';
 import {
@@ -50,6 +51,7 @@ function metaOf(req: RawReq): RequestMeta {
 }
 
 import {
+  ConsentsDto,
   DeleteConfirmDto,
   EmailRequestDto,
   MemoryDto,
@@ -72,6 +74,7 @@ export class AccountPreferencesController {
     private readonly reqDelete: RequestAccountDelete,
     private readonly confDelete: ConfirmAccountDelete,
     private readonly memories: Memories,
+    private readonly consents: Consents,
   ) {}
 
   @Patch('me')
@@ -157,6 +160,25 @@ export class AccountPreferencesController {
     @Body() dto: MemoryDto,
   ): Promise<Record<string, unknown>> {
     return this.memories.add(user.id, dto.fact);
+  }
+
+  @Get('consents')
+  async consentsGet(@CurrentUser() user: AuthUser): Promise<Record<string, unknown>> {
+    return (await this.consents.get(user.id)) as unknown as Record<string, unknown>;
+  }
+
+  @Post('consents')
+  async consentsPost(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ConsentsDto,
+    @Req() req: RawReq,
+  ): Promise<Record<string, unknown>> {
+    const out = await this.consents.accept(
+      user.id,
+      { termsAccepted: dto.terms_accepted, privacyAccepted: dto.privacy_accepted },
+      metaOf(req),
+    );
+    return out as unknown as Record<string, unknown>;
   }
 
   @Delete('memories/:id')

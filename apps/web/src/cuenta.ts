@@ -11,6 +11,20 @@ export interface Me {
   email_verified: boolean;
   role: string;
   created_at: string;
+  terms_version: string | null;
+  terms_accepted_at: string | null;
+  privacy_version: string | null;
+  privacy_accepted_at: string | null;
+}
+
+export interface ConsentState {
+  terms_version: string | null;
+  terms_accepted_at: string | null;
+  privacy_version: string | null;
+  privacy_accepted_at: string | null;
+  complete: boolean;
+  current_terms_version: string;
+  current_privacy_version: string;
 }
 
 export interface Sesion {
@@ -137,6 +151,10 @@ function booleano(v: unknown, defecto = false): boolean {
   return typeof v === 'boolean' ? v : defecto;
 }
 
+function textoONulo(v: unknown): string | null {
+  return typeof v === 'string' ? v : null;
+}
+
 function comoMe(v: unknown): Me {
   const b = esRegistro(v) ? v : {};
   const display = b['display_name'];
@@ -147,7 +165,41 @@ function comoMe(v: unknown): Me {
     email_verified: booleano(b['email_verified']),
     role: texto(b['role'], 'user'),
     created_at: texto(b['created_at']),
+    terms_version: textoONulo(b['terms_version']),
+    terms_accepted_at: textoONulo(b['terms_accepted_at']),
+    privacy_version: textoONulo(b['privacy_version']),
+    privacy_accepted_at: textoONulo(b['privacy_accepted_at']),
   };
+}
+
+function comoConsentimientos(v: unknown): ConsentState {
+  const b = esRegistro(v) ? v : {};
+  return {
+    terms_version: textoONulo(b['terms_version']),
+    terms_accepted_at: textoONulo(b['terms_accepted_at']),
+    privacy_version: textoONulo(b['privacy_version']),
+    privacy_accepted_at: textoONulo(b['privacy_accepted_at']),
+    complete: booleano(b['complete']),
+    current_terms_version: texto(b['current_terms_version']),
+    current_privacy_version: texto(b['current_privacy_version']),
+  };
+}
+
+export async function fetchConsentimientos(): Promise<ConsentState> {
+  return comoConsentimientos(await authJson<unknown>('/account/consents'));
+}
+
+export async function aceptarConsentimientos(
+  termsAccepted: boolean,
+  privacyAccepted: boolean,
+): Promise<ConsentState> {
+  return comoConsentimientos(
+    await authJson<unknown>('/account/consents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ terms_accepted: termsAccepted, privacy_accepted: privacyAccepted }),
+    }),
+  );
 }
 
 export async function fetchMe(): Promise<Me> {
@@ -233,7 +285,7 @@ export async function patchPreferencias(parche: Record<string, unknown>): Promis
 export async function exportarCuenta(): Promise<{ nombre: string; contenido: string }> {
   const b = await authJson<Record<string, unknown>>('/account/export');
   const fecha = new Date().toISOString().slice(0, 10);
-  return { nombre: `lexagent-datos-${fecha}.json`, contenido: JSON.stringify(b, null, 2) };
+  return { nombre: `kelsyx-datos-${fecha}.json`, contenido: JSON.stringify(b, null, 2) };
 }
 
 export async function solicitarBorrado(): Promise<string> {
@@ -552,4 +604,115 @@ export async function adminOtorgarPlan(userId: string, plan: string, dias: numbe
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId, plan, days: dias }),
   });
+}
+
+export interface AccessModeAdmin {
+  mode: string;
+  static_code_configured: boolean;
+  env_whitelist_count: number;
+  db_whitelist_count: number;
+  db_codes_active: number;
+}
+
+export interface WhitelistEntry {
+  id: string;
+  pattern: string;
+  label: string | null;
+  created_at: string;
+}
+
+export interface AccessCodeRow {
+  id: string;
+  label: string | null;
+  max_uses: number;
+  used_count: number;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+export interface AccessCodeCreated extends AccessCodeRow {
+  code: string;
+}
+
+export async function adminAccessMode(): Promise<AccessModeAdmin> {
+  const b = await authJson<unknown>('/admin/access/mode');
+  const r = esRegistro(b) ? b : {};
+  return {
+    mode: texto(r['mode'], 'public'),
+    static_code_configured: booleano(r['static_code_configured']),
+    env_whitelist_count: numero(r['env_whitelist_count']),
+    db_whitelist_count: numero(r['db_whitelist_count']),
+    db_codes_active: numero(r['db_codes_active']),
+  };
+}
+
+function comoWhitelist(v: unknown): WhitelistEntry {
+  const b = esRegistro(v) ? v : {};
+  return {
+    id: texto(b['id']),
+    pattern: texto(b['pattern']),
+    label: typeof b['label'] === 'string' ? b['label'] : null,
+    created_at: texto(b['created_at']),
+  };
+}
+
+export async function adminWhitelistList(): Promise<WhitelistEntry[]> {
+  const b = await authJson<Record<string, unknown>>('/admin/access/whitelist');
+  const lista = b['entries'];
+  return Array.isArray(lista) ? lista.map(comoWhitelist) : [];
+}
+
+export async function adminWhitelistAdd(pattern: string, label: string): Promise<WhitelistEntry> {
+  const b = await authJson<unknown>('/admin/access/whitelist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pattern, label: label || undefined }),
+  });
+  return comoWhitelist(b);
+}
+
+export async function adminWhitelistRemove(id: string): Promise<void> {
+  await authJson<unknown>(`/admin/access/whitelist/${id}`, { method: 'DELETE' });
+}
+
+function comoCode(v: unknown): AccessCodeRow {
+  const b = esRegistro(v) ? v : {};
+  return {
+    id: texto(b['id']),
+    label: typeof b['label'] === 'string' ? b['label'] : null,
+    max_uses: numero(b['max_uses']),
+    used_count: numero(b['used_count']),
+    expires_at: typeof b['expires_at'] === 'string' ? b['expires_at'] : null,
+    revoked_at: typeof b['revoked_at'] === 'string' ? b['revoked_at'] : null,
+    created_at: texto(b['created_at']),
+  };
+}
+
+export async function adminCodesList(): Promise<AccessCodeRow[]> {
+  const b = await authJson<Record<string, unknown>>('/admin/access/codes');
+  const lista = b['codes'];
+  return Array.isArray(lista) ? lista.map(comoCode) : [];
+}
+
+export async function adminCodeCreate(
+  label: string,
+  maxUses: number,
+  expiresInDays: number | null,
+): Promise<AccessCodeCreated> {
+  const b = await authJson<unknown>('/admin/access/codes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      label: label || undefined,
+      max_uses: maxUses,
+      expires_in_days: expiresInDays ?? undefined,
+    }),
+  });
+  const r = esRegistro(b) ? b : {};
+  return { ...comoCode(b), code: texto(r['code']) };
+}
+
+export async function adminCodeRevoke(id: string): Promise<void> {
+  await authJson<unknown>(`/admin/access/codes/${id}/revoke`, { method: 'POST' });
 }

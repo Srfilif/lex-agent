@@ -1,4 +1,4 @@
--- LexAgent — esquema sqlite (DATABASE_PROVIDER=sqlite, dev local sin Postgres).
+-- Kelsyx — esquema sqlite (DATABASE_PROVIDER=sqlite, dev local sin Postgres).
 -- Espejo de db/init.sql (estado final). Lo aplica `npm run migrate` una vez
 -- (tracking: schema_migrations='sqlite_schema'). Diferencias deliberadas:
 --   - Sin extensiones (vector/pg_trgm/unaccent) ni tsvector/lex_spanish/HNSW.
@@ -95,7 +95,11 @@ CREATE TABLE IF NOT EXISTS users (
                   CHECK (role IN ('user', 'admin')),
   created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  deletion_requested_at TEXT NULL
+  deletion_requested_at TEXT NULL,
+  terms_version       TEXT NULL,
+  terms_accepted_at   TEXT NULL,
+  privacy_version     TEXT NULL,
+  privacy_accepted_at TEXT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 
@@ -375,3 +379,24 @@ CREATE TABLE IF NOT EXISTS user_memories (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_mem_user ON user_memories (user_id, created_at);
+
+-- Control de acceso (espejo de db/migrations/020_access.sql; ids desde app).
+CREATE TABLE IF NOT EXISTS access_whitelist (
+  id         TEXT PRIMARY KEY,
+  pattern    TEXT NOT NULL UNIQUE,
+  label      TEXT NULL,
+  created_by TEXT NULL REFERENCES users (id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS access_codes (
+  id          TEXT PRIMARY KEY,
+  code_hash   TEXT NOT NULL UNIQUE,
+  label       TEXT NULL,
+  max_uses    INTEGER NOT NULL DEFAULT 1 CHECK (max_uses >= 1),
+  used_count  INTEGER NOT NULL DEFAULT 0 CHECK (used_count >= 0),
+  expires_at  TEXT NULL,
+  revoked_at  TEXT NULL,
+  created_by  TEXT NULL REFERENCES users (id) ON DELETE SET NULL,
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);

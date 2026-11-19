@@ -22,6 +22,7 @@ import {
   ExportAccount,
   RequestAccountDelete,
 } from './application/privacy';
+import { Consents } from './application/consents';
 import {
   PgAccountPrivacyRepository,
   PgMemoryRepository,
@@ -47,6 +48,7 @@ import { AccountPreferencesController } from './presentation/http/account.contro
     ExportAccount,
     RequestAccountDelete,
     ConfirmAccountDelete,
+    Consents,
   ],
   exports: [MEMORY_FOR_AGENT, MemoryForAgent],
 })

@@ -18,7 +18,7 @@ Invoke-RestMethod http://localhost:3000/health          # status ok
 
 | Tiempo | Qué hacer | Qué decir |
 |---|---|---|
-| 0:00–0:30 | UI en pantalla. | "Lex Colombia AI: investigas norma + jurisprudencia + contratación en un solo lugar, y cada afirmación trae su cita verificada. Si no hay evidencia, lo dice." |
+| 0:00–0:30 | UI en pantalla. | "Kelsyx AI: investigas norma + jurisprudencia + contratación en un solo lugar, y cada afirmación trae su cita verificada. Si no hay evidencia, lo dice." |
 | 0:30–2:00 | Pegar pregunta 1 y pulsar Investigar. Mientras corre (~40–90 s), narrar la traza. | Pregunta: `¿Qué dice el artículo 24 de la Ley 80 de 1993 sobre transparencia?` "El agente busca normas, verifica citas y arma el informe con veredictos." |
 | 2:00–2:45 | Al llegar el informe: señalar ✓/~/○, pulsar una cita → panel muestra el fragmento exacto. | "Cada ✓ resolvió a un fragmento real del corpus. Cero citas inventadas en 30 preguntas evaluadas." |
 | 2:45–3:45 | Bajar a Contratos SECOP: `entidad=medellin`, Buscar. Señalar una señal + enlace origen. | "Contratos reales sincronizados de SECOP II, con enlace al origen. Las señales son indicios, no acusaciones." |

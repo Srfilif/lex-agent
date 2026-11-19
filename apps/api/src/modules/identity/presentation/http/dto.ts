@@ -1,6 +1,6 @@
 // DTOs de /auth y /account. ValidationPipe global (whitelist) descarta extras:
 // rol, plan o flags enviados por el cliente nunca llegan al caso de uso.
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Equals, IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -16,6 +16,22 @@ export class RegisterDto {
   @IsString()
   @MaxLength(80)
   display_name?: string;
+
+  /** Aceptación contractual de los Términos (casilla 1, obligatoria). */
+  @IsBoolean()
+  @Equals(true)
+  terms_accepted!: boolean;
+
+  /** Autorización de tratamiento de datos Ley 1581 (casilla 2, obligatoria). */
+  @IsBoolean()
+  @Equals(true)
+  privacy_accepted!: boolean;
+
+  /** Código de acceso (obligatorio solo en modo `code`). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  access_code?: string;
 }
 
 export class LoginDto {

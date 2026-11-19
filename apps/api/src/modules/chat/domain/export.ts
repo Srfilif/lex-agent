@@ -41,7 +41,7 @@ export function buildConversationMarkdown(input: ExportInput): string {
     }
   }
   lines.push('---');
-  lines.push('_Generado por LexAgent. Verifique las fuentes antes de actuar._');
+  lines.push('_Generado por Kelsyx. Verifique las fuentes antes de actuar._');
   lines.push('');
   return lines.join('\n');
 }

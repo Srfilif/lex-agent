@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const alt =
-  'Lex Colombia — Derecho colombiano con la fuente a la vista';
+  'Kelsyx — Derecho colombiano con la fuente a la vista';
 export const size = {
   width: 1200,
   height: 630,
@@ -33,23 +33,19 @@ export default function OpengraphImage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div
-              style={{
-                width: '46px',
-                height: '46px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#141814',
-                color: '#f4f3ed',
-                fontSize: '28px',
-              }}
-            >
-              L
-            </div>
+            <svg width="46" height="46" viewBox="0 0 64 64">
+              <rect width="64" height="64" fill="#141814" />
+              <path
+                d="M20 6v44M20 28L44 6M25 33L46 50"
+                fill="none"
+                stroke="#f4f3ed"
+                strokeWidth="8.5"
+              />
+              <path d="M14 58h38" stroke="#91c7ab" strokeWidth="2.5" />
+            </svg>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-                Lex Colombia
+                Kelsyx
               </div>
               <div
                 style={{

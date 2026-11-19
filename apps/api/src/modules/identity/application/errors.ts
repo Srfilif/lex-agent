@@ -74,3 +74,23 @@ export function totpYaActivo(): AuthError {
 export function operacionNoPermitida(msg: string): AuthError {
   return new AuthError(400, 'operacion_no_permitida', msg);
 }
+
+export function registroCerrado(): AuthError {
+  return new AuthError(403, 'registro_cerrado', 'el registro está cerrado por el momento');
+}
+
+export function correoNoAutorizado(): AuthError {
+  return new AuthError(403, 'correo_no_autorizado', 'este correo no está autorizado a registrarse');
+}
+
+export function codigoAccesoInvalido(): AuthError {
+  return new AuthError(403, 'codigo_acceso_invalido', 'código de acceso inválido o agotado');
+}
+
+export function mantenimiento(): AuthError {
+  return new AuthError(
+    403,
+    'mantenimiento',
+    'plataforma en mantenimiento: solo administradores',
+  );
+}

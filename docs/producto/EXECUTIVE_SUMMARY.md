@@ -1,4 +1,4 @@
-# EXECUTIVE_SUMMARY — Lex Colombia AI
+# EXECUTIVE_SUMMARY — Kelsyx AI
 
 **Qué es:** herramienta de investigación asistida por IA que une fuentes jurídicas colombianas y datos de contratación pública, y responde con citas verificables. No es un sustituto del criterio profesional.
 

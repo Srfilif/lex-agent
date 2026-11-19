@@ -72,11 +72,57 @@ export async function login(email: string, password: string): Promise<void> {
   saveSession(t.access_token, t.refresh_token, email);
 }
 
-export async function register(email: string, password: string): Promise<string> {
+export interface AccessModeState {
+  mode: 'public' | 'maintenance' | 'closed' | 'whitelist' | 'code';
+  code_required: boolean;
+  whitelist_required: boolean;
+}
+
+const ACCESS_ABIERTO: AccessModeState = {
+  mode: 'public',
+  code_required: false,
+  whitelist_required: false,
+};
+
+const MODOS: AccessModeState['mode'][] = ['public', 'maintenance', 'closed', 'whitelist', 'code'];
+
+/**
+ * Modo de acceso público. Si falla (API caída), asume abierto: el servidor
+ * es la fuente de verdad y rechazará lo que no cumpla.
+ */
+export async function fetchAccessMode(): Promise<AccessModeState> {
+  try {
+    const r = await fetch(`${API}/auth/access-mode`);
+    if (!r.ok) return ACCESS_ABIERTO;
+    const b = (await r.json()) as Record<string, unknown>;
+    const raw = b['mode'] === 'open' ? 'public' : b['mode'];
+    if (!MODOS.includes(raw as AccessModeState['mode'])) return ACCESS_ABIERTO;
+    return {
+      mode: raw as AccessModeState['mode'],
+      code_required: b['code_required'] === true,
+      whitelist_required: b['whitelist_required'] === true,
+    };
+  } catch {
+    return ACCESS_ABIERTO;
+  }
+}
+
+export async function register(
+  email: string,
+  password: string,
+  consent: { termsAccepted: boolean; privacyAccepted: boolean },
+  accessCode?: string,
+): Promise<string> {
   const r = await fetch(`${API}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({
+      email,
+      password,
+      terms_accepted: consent.termsAccepted,
+      privacy_accepted: consent.privacyAccepted,
+      ...(accessCode?.trim() ? { access_code: accessCode.trim() } : {}),
+    }),
   });
   if (!r.ok) {
     const e = await readError(r);

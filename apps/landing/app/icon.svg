@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lex Colombia">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kelsyx">
   <rect width="64" height="64" rx="3" fill="#141814"/>
-  <path d="M22 15v34h22v-5H29V15z" fill="#f4f3ed"/>
-  <path d="M22 49h22" stroke="#91c7ab" stroke-width="2"/>
+  <path d="M20 6v44M20 28L44 6M25 33L46 50" fill="none" stroke="#f4f3ed" stroke-width="8.5" stroke-linecap="square"/>
+  <path d="M14 58h38" stroke="#91c7ab" stroke-width="2.5"/>
 </svg>

@@ -22,3 +22,10 @@ export function passwordDebil(): DomainError {
 export function nombreInvalido(): DomainError {
   return new DomainError('nombre_invalido', 'nombre visible inválido (máx. 80 caracteres)');
 }
+
+export function patronInvalido(): DomainError {
+  return new DomainError(
+    'patron_invalido',
+    'patrón inválido: correo exacto o *@dominio.tld',
+  );
+}

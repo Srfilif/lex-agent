@@ -3,6 +3,7 @@
 import { dirname, isAbsolute, join, resolve } from 'path';
 import { existsSync } from 'fs';
 import { loadDotenv } from './dotenv';
+import { resolveAccessMode, type AccessMode } from './access-mode';
 
 export interface AuthConfig {
   jwtSecret: string;
@@ -32,6 +33,15 @@ export interface BillingConfig {
   provider: string;
   webhookSecret: string;
   secretsConfigured: boolean;
+}
+
+export interface AccessConfig {
+  /** Modo de acceso (`ACCESS_MODE`): public | maintenance | closed | whitelist | code. */
+  mode: AccessMode;
+  /** Patrones extra de whitelist (`ACCESS_WHITELIST`, csv; unión con BD). */
+  whitelist: string[];
+  /** Código único estático (`ACCESS_CODE`); vacío = solo códigos de BD. */
+  staticCode: string;
 }
 
 export interface AppConfig {
@@ -81,6 +91,7 @@ export interface AppConfig {
   auth: AuthConfig;
   totp: TotpConfig;
   billing: BillingConfig;
+  access: AccessConfig;
 }
 
 export const CONFIG = Symbol('APP_CONFIG');
@@ -281,13 +292,27 @@ export function loadAppConfig(fromDir: string = __dirname): AppConfig {
     // eslint-disable-next-line no-console
     console.warn('[auth] REDIS_URL ausente: rate-limit en memoria (válido solo con 1 réplica)');
   }
+  const accessMode = resolveAccessMode(e.ACCESS_MODE);
+  const accessWhitelist = (e.ACCESS_WHITELIST ?? '')
+    .split(',')
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  const accessStaticCode = str(e.ACCESS_CODE, '');
+  if (accessMode === 'code' && !accessStaticCode) {
+    // eslint-disable-next-line no-console
+    console.warn('[acceso] modo=code sin ACCESS_CODE: solo valen códigos de BD');
+  }
+  if (accessMode === 'whitelist' && accessWhitelist.length === 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[acceso] modo=whitelist sin ACCESS_WHITELIST: solo valen entradas de BD');
+  }
   return {
     nodeEnv,
     corsOrigins,
     allowAnonInvestigate: boolEnv(e.ALLOW_ANON_INVESTIGATE, nodeEnv !== 'production'),
     redisUrl: str(e.REDIS_URL, ''),
     smtpUrl,
-    smtpFrom: str(e.SMTP_FROM, 'LexAgent <no-reply@lex.local>'),
+    smtpFrom: str(e.SMTP_FROM, 'Kelsyx <no-reply@lex.local>'),
     port: port(e.PORT),
     databaseUrl: str(e.DATABASE_URL, 'postgres://lex:lexdev@localhost:5433/lexdb'),
     databaseProvider: dbProvider(e.DATABASE_PROVIDER),
@@ -319,5 +344,10 @@ export function loadAppConfig(fromDir: string = __dirname): AppConfig {
     auth: auth(e, nodeEnv),
     totp: totp(e, nodeEnv),
     billing: billing(e, nodeEnv),
+    access: {
+      mode: accessMode,
+      whitelist: accessWhitelist,
+      staticCode: accessStaticCode,
+    },
   };
 }

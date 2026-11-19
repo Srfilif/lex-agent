@@ -32,6 +32,10 @@ interface UserRow {
   email_verified_at: Date | null;
   status: string;
   role: string;
+  terms_version: string | null;
+  terms_accepted_at: Date | null;
+  privacy_version: string | null;
+  privacy_accepted_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -45,6 +49,10 @@ function toUser(r: UserRow): User {
     emailVerifiedAt: asDateOrNull(r.email_verified_at),
     status: r.status as UserProps['status'],
     role: r.role as UserProps['role'],
+    termsVersion: r.terms_version,
+    termsAcceptedAt: asDateOrNull(r.terms_accepted_at),
+    privacyVersion: r.privacy_version,
+    privacyAcceptedAt: asDateOrNull(r.privacy_accepted_at),
     createdAt: asDate(r.created_at),
     updatedAt: asDate(r.updated_at),
   };
@@ -69,9 +77,21 @@ export class PgUserRepository implements UserRepository {
 
   async insert(n: NewUserProps): Promise<User> {
     const r = await this.db.raw.query(
-      `INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $5) RETURNING *`,
-      [n.id, n.email, n.displayName, n.passwordHash, n.now],
+      `INSERT INTO users (id, email, display_name, password_hash,
+        terms_version, terms_accepted_at, privacy_version, privacy_accepted_at,
+        created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING *`,
+      [
+        n.id,
+        n.email,
+        n.displayName,
+        n.passwordHash,
+        n.consent?.termsVersion ?? null,
+        n.consent ? n.now : null,
+        n.consent?.privacyVersion ?? null,
+        n.consent ? n.now : null,
+        n.now,
+      ],
     );
     return toUser(r.rows[0] as UserRow);
   }
@@ -80,9 +100,24 @@ export class PgUserRepository implements UserRepository {
     const p = u.snapshot;
     await this.db.raw.query(
       `UPDATE users SET email = $2, display_name = $3, password_hash = $4,
-        email_verified_at = $5, status = $6, role = $7, updated_at = $8
+        email_verified_at = $5, status = $6, role = $7,
+        terms_version = $8, terms_accepted_at = $9,
+        privacy_version = $10, privacy_accepted_at = $11, updated_at = $12
        WHERE id = $1`,
-      [p.id, p.email, p.displayName, p.passwordHash, p.emailVerifiedAt, p.status, p.role, p.updatedAt],
+      [
+        p.id,
+        p.email,
+        p.displayName,
+        p.passwordHash,
+        p.emailVerifiedAt,
+        p.status,
+        p.role,
+        p.termsVersion,
+        p.termsAcceptedAt,
+        p.privacyVersion,
+        p.privacyAcceptedAt,
+        p.updatedAt,
+      ],
     );
   }
 

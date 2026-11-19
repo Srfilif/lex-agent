@@ -1,6 +1,6 @@
 # lex-landing — landing pública
 
-Landing independiente de Lex Colombia. Vive en su propia app Next.js para
+Landing independiente de Kelsyx. Vive en su propia app Next.js para
 tener renderizado en servidor, metadatos reales y una URL canónica, sin
 mezclar el framework con la SPA del producto.
 
@@ -9,8 +9,9 @@ mezclar el framework con la SPA del producto.
 - Next.js 15 (App Router) + React 19 + TypeScript estricto.
 - CSS Modules + tokens propios. Sin Tailwind ni librería de componentes.
 - `next/font/google`: Instrument Serif (display) e Inter (texto).
-- Renderizado en servidor; el único componente cliente es el selector de tema
-  claro/oscuro, que persiste la preferencia en `localStorage`.
+- Renderizado en servidor. Los componentes cliente son el selector de tema
+  claro/oscuro, la navegación con scroll spy y el formulario de contacto, que
+  prepara un correo sin enviar datos a un servidor.
 
 ## Scripts
 
@@ -36,8 +37,9 @@ protocolo y sin barra final.
 
 ## Rutas
 
-- `/` — landing.
+- `/` — landing con las secciones de producto, acerca de y contacto.
 - `/aviso-legal` — condiciones y límites del servicio.
+- `/licencia` — condiciones de la PolyForm Noncommercial 1.0.0.
 - `/opengraph-image` — imagen social 1200×630 generada con `next/og`.
 - `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest`.
 

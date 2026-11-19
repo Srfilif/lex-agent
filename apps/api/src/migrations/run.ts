@@ -1,5 +1,5 @@
 // Runner de migraciones SQL (uso: npm run migrate).
-// postgres: aplica db/migrations/005-019 en orden, una vez cada uno (schema_migrations).
+// postgres: aplica db/migrations/005-02x en orden, una vez cada uno (schema_migrations).
 // sqlite: aplica db/sqlite/schema.sql una vez (tracking 'sqlite_schema').
 // Baseline pg: 002-004 se aplicaron a mano antes del runner y no se tocan.
 // Cada archivo pg corre en transacción propia; el registro es parte de ella.
@@ -37,7 +37,7 @@ async function migratePg(db: DbDriver): Promise<void> {
   const done = await db.query('SELECT name FROM schema_migrations');
   const applied = new Set((done.rows as Array<{ name: string }>).map((r) => r.name));
   const files = readdirSync(MIGRATIONS_DIR)
-    .filter((f) => /^0(?:0[5-9]|1\d).*\.sql$/.test(f))
+    .filter((f) => /^0(?:0[5-9]|[12]\d).*\.sql$/.test(f))
     .sort();
   for (const f of files) {
     actual = f;

@@ -13,6 +13,10 @@ export function publicUser(u: User): Record<string, unknown> {
     email_verified: p.emailVerifiedAt !== null,
     role: p.role,
     created_at: p.createdAt.toISOString(),
+    terms_version: p.termsVersion,
+    terms_accepted_at: p.termsAcceptedAt ? p.termsAcceptedAt.toISOString() : null,
+    privacy_version: p.privacyVersion,
+    privacy_accepted_at: p.privacyAcceptedAt ? p.privacyAcceptedAt.toISOString() : null,
   };
 }
 

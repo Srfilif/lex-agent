@@ -51,6 +51,10 @@ import { OpsMetricas } from '../modules/ops/application/ops-metricas';
 import { PgOpsMetricsRepository } from '../modules/ops/infrastructure/persistence/pg-ops-metrics.repository';
 import { Investigate } from '../modules/research/application/investigate';
 import { PgInvestigationRepository } from '../modules/research/infrastructure/persistence/pg-investigation.repository';
+import {
+  PgAccessCodeRepository,
+  PgWhitelistRepository,
+} from '../modules/identity/infrastructure/persistence/pg-access.repositories';
 
 let fails = 0;
 function eq(name: string, a: unknown, b: unknown): void {
@@ -77,7 +81,7 @@ async function main(): Promise<void> {
   const tables = await db.raw.query(
     "SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
   );
-  eq('schema 27 tablas', Number((tables.rows[0] as { n: number }).n), 27);
+  eq('schema 29 tablas', Number((tables.rows[0] as { n: number }).n), 29);
   const seed = await db.raw.query('SELECT (SELECT count(*) FROM plans) AS p, (SELECT count(*) FROM plan_entitlements) AS e');
   eq('seed planes/entitlements', [Number((seed.rows[0] as { p: number }).p), Number((seed.rows[0] as { e: number }).e)], [3, 12]);
 
@@ -88,6 +92,8 @@ async function main(): Promise<void> {
   const totp = new PgTotpRepository(db);
   const recs = new PgRecoveryCodeRepository(db);
   const secev = new PgSecurityEventRepository(db);
+  const wlist = new PgWhitelistRepository(db);
+  const acodes = new PgAccessCodeRepository(db);
 
   // identity: usuarios
   const uid = newUuid();
@@ -101,10 +107,33 @@ async function main(): Promise<void> {
   const uObj = User.rehydrate({
     id: uid, email: 'qa@lex.local', displayName: 'QA New', passwordHash: 'h',
     emailVerifiedAt: now, status: 'active', role: 'user', createdAt: now, updatedAt: now,
+    termsVersion: null, termsAcceptedAt: null, privacyVersion: null, privacyAcceptedAt: null,
   });
   uObj.setDisplayName(parseDisplayName('QA Dos'), new Date());
+  eq('user sin consentimiento', uObj.consentsComplete, false);
+  uObj.recordConsent('2026-11-18-v1', '2026-11-18-v1', new Date());
+  eq('user consentsComplete', uObj.consentsComplete, true);
   await users.update(uObj);
   eq('user update', (await users.findById(uid))?.snapshot.displayName, 'QA Dos');
+  eq('user update persiste terms', (await users.findById(uid))?.snapshot.termsVersion, '2026-11-18-v1');
+
+  // acceso: whitelist + códigos (020)
+  const w1 = await wlist.add(newUuid(), 'ana@x.co', 'piloto', uid);
+  await wlist.add(newUuid(), '*@empresa.co', null, null);
+  eq('wl add', w1.pattern, 'ana@x.co');
+  eq('wl patterns', (await wlist.patterns()).sort(), ['*@empresa.co', 'ana@x.co']);
+  eq('wl remove', await wlist.remove(w1.id), true);
+  eq('wl remove falta', await wlist.remove(w1.id), false);
+  const code = await acodes.insert({
+    id: newUuid(), codeHash: 'h1', label: 'demo', maxUses: 2, expiresAt: null, createdBy: uid,
+  });
+  eq('code insert', [code.usedCount, code.maxUses], [0, 2]);
+  eq('code find', (await acodes.findByHash('h1'))?.id, code.id);
+  eq('code consume 1', await acodes.consume(code.id), true);
+  eq('code consume 2', await acodes.consume(code.id), true);
+  eq('code agotado', await acodes.consume(code.id), false);
+  eq('code revoke', await acodes.revoke(code.id, new Date()), true);
+  eq('code revoke doble', await acodes.revoke(code.id, new Date()), false);
   eq('user count search (LIKE)', await users.count('lex'), 1);
   eq('user list', (await users.list({ search: 'lex', limit: 10, offset: 0 })).length, 1);
 

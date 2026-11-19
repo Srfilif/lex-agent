@@ -5,12 +5,14 @@ import { Redis } from 'ioredis';
 import { SharedModule } from '../../shared/shared.module';
 import { AppConfig, CONFIG } from '../../shared/config';
 import {
+  ACCESS_CODE_REPOSITORY,
   ONE_TIME_TOKEN_REPOSITORY,
   RECOVERY_CODE_REPOSITORY,
   SECURITY_EVENT_REPOSITORY,
   SESSION_REPOSITORY,
   TOTP_REPOSITORY,
   USER_REPOSITORY,
+  WHITELIST_REPOSITORY,
 } from './domain/repositories';
 import {
   ACCESS_TOKENS,
@@ -52,6 +54,7 @@ import {
   AdminSetUserRole,
   AdminSetUserStatus,
 } from './application/admin';
+import { AccessAdmin, AccessPolicy } from './application/access';
 import { GetProfile } from './application/profile';
 import { Hs256AccessTokens } from './infrastructure/crypto/access-token.service';
 import { Hs256MfaTokens } from './infrastructure/crypto/mfa-token.service';
@@ -71,6 +74,11 @@ import {
   PgTotpRepository,
   PgUserRepository,
 } from './infrastructure/persistence/pg-identity.repositories';
+import {
+  PgAccessCodeRepository,
+  PgWhitelistRepository,
+} from './infrastructure/persistence/pg-access.repositories';
+import { AccessAdminController } from './presentation/http/access-admin.controller';
 import { AccountController } from './presentation/http/account.controller';
 import { AdminController } from './presentation/http/admin.controller';
 import { AuthController } from './presentation/http/auth.controller';
@@ -81,9 +89,11 @@ import { TotpController } from './presentation/http/totp.controller';
 
 @Module({
   imports: [SharedModule],
-  controllers: [AuthController, AccountController, TotpController, AdminController],
+  controllers: [AuthController, AccountController, TotpController, AdminController, AccessAdminController],
   providers: [
     { provide: USER_REPOSITORY, useClass: PgUserRepository },
+    { provide: WHITELIST_REPOSITORY, useClass: PgWhitelistRepository },
+    { provide: ACCESS_CODE_REPOSITORY, useClass: PgAccessCodeRepository },
     { provide: SESSION_REPOSITORY, useClass: PgSessionRepository },
     { provide: ONE_TIME_TOKEN_REPOSITORY, useClass: PgOneTimeTokenRepository },
     { provide: SECURITY_EVENT_REPOSITORY, useClass: PgSecurityEventRepository },
@@ -137,6 +147,8 @@ import { TotpController } from './presentation/http/totp.controller';
     },
     RegisterUser,
     LoginUser,
+    AccessPolicy,
+    AccessAdmin,
     RefreshSession,
     Logout,
     LogoutAll,

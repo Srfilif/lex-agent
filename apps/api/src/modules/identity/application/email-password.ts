@@ -100,7 +100,7 @@ export class ResendVerification {
     );
     await this.email.send({
       to: user.email,
-      subject: 'Verifique su cuenta de LexAgent',
+      subject: 'Verifique su cuenta de Kelsyx',
       text: `Su token de verificación (válido 24h). Envíelo a POST /auth/verify-email como {"token": "..."}:\n${token}`,
     });
     return { message };
@@ -140,7 +140,7 @@ export class RequestPasswordReset {
     );
     await this.email.send({
       to: user.email,
-      subject: 'Recupere su contraseña de LexAgent',
+      subject: 'Recupere su contraseña de Kelsyx',
       text: `Su token de recuperación (válido 1h). Envíelo a POST /auth/reset-password junto a la nueva contraseña:\n${token}`,
     });
     await this.events.record({

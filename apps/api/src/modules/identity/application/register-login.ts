@@ -13,12 +13,15 @@ import {
   UserRepository,
 } from '../domain/repositories';
 import { User } from '../domain/user';
+import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../domain/consent-versions';
 import { parseDisplayName, parseEmail, parsePassword } from '../domain/value-objects';
 import {
   cuentaNoDisponible,
   credencialesInvalidas,
   limiteExcedido,
+  operacionNoPermitida,
 } from './errors';
+import { AccessPolicy } from './access';
 import { IssueSession } from './issue-session';
 import {
   EMAIL_SENDER,
@@ -47,17 +50,29 @@ export class RegisterUser {
     @Inject(TOKEN_GENERATOR) private readonly gen: TokenGenerator,
     @Inject(EMAIL_SENDER) private readonly email: EmailSender,
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
+    private readonly access: AccessPolicy,
   ) {}
 
   async execute(
-    input: { email: string; password: string; displayName?: string },
+    input: {
+      email: string;
+      password: string;
+      displayName?: string;
+      termsAccepted: boolean;
+      privacyAccepted: boolean;
+      accessCode?: string | null;
+    },
     meta: RequestMeta,
   ): Promise<{ message: string }> {
+    if (input.termsAccepted !== true || input.privacyAccepted !== true) {
+      throw operacionNoPermitida('debe aceptar los términos y autorizar el tratamiento de datos');
+    }
     const rl = await this.limiter.consume(`register:${meta.ip ?? 'sin-ip'}`, 5, 3600);
     if (!rl.allowed) throw limiteExcedido(rl.retryAfterSec);
     const email = parseEmail(input.email);
     const password = parsePassword(input.password);
     const displayName = parseDisplayName(input.displayName);
+    await this.access.checkRegistration(email, input.accessCode ?? null, meta);
     const existing = await this.users.findByEmail(email);
     const message = 'cuenta creada; revise su correo para verificarla';
     if (existing) {
@@ -72,7 +87,7 @@ export class RegisterUser {
       });
       await this.email.send({
         to: email,
-        subject: 'Intento de registro en LexAgent',
+        subject: 'Intento de registro en Kelsyx',
         text: 'Alguien intentó crear una cuenta con este correo, que ya está registrado. Si fue usted, inicie sesión o recupere su contraseña.',
       });
       return { message };
@@ -84,6 +99,7 @@ export class RegisterUser {
       displayName,
       passwordHash: await this.hasher.hash(password),
       now,
+      consent: { termsVersion: CURRENT_TERMS_VERSION, privacyVersion: CURRENT_PRIVACY_VERSION },
     });
     const token = this.gen.randomToken();
     await this.tokens.issue(
@@ -94,7 +110,7 @@ export class RegisterUser {
     );
     await this.email.send({
       to: email,
-      subject: 'Verifique su cuenta de LexAgent',
+      subject: 'Verifique su cuenta de Kelsyx',
       text: `Su token de verificación (válido 24h). Envíelo a POST /auth/verify-email como {"token": "..."}:\n${token}`,
     });
     await this.events.record({
@@ -120,6 +136,7 @@ export class LoginUser {
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
     @Inject(CONFIG) private readonly cfg: AppConfig,
     private readonly issue: IssueSession,
+    private readonly access: AccessPolicy,
   ) {}
 
   async execute(
@@ -143,6 +160,7 @@ export class LoginUser {
       });
       throw credencialesInvalidas();
     }
+    await this.access.checkSession(user, meta);
     await this.failUnless(user, input.password, meta);
     // Segunda fase si hay 2FA activo: pre-token, NO sesión.
     const t = await this.totp.findByUser(user.id);

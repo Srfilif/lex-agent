@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Instrument_Serif, Inter } from 'next/font/google';
 import './globals.css';
+import { CookieNotice } from './CookieNotice';
 
 const display = Instrument_Serif({
   subsets: ['latin'],
@@ -20,7 +21,7 @@ const sans = Inter({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001';
 
-const title = 'Lex Colombia — Investigación jurídica con fuentes verificables';
+const title = 'Kelsyx — Investigación jurídica con fuentes verificables';
 const description =
   'Espacio de trabajo para consultar normativa, jurisprudencia y contratos públicos de Colombia. Cada afirmación relevante queda enlazada al fragmento que la respalda.';
 
@@ -28,13 +29,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: title,
-    template: '%s · Lex Colombia',
+    template: '%s · Kelsyx',
   },
   description,
-  applicationName: 'Lex Colombia',
-  authors: [{ name: 'Lex Colombia' }],
-  creator: 'Lex Colombia',
-  publisher: 'Lex Colombia',
+  applicationName: 'Kelsyx',
+  authors: [{ name: 'Andrés Felipe Ángel', url: 'https://srfilif.dev' }],
+  creator: 'Andrés Felipe Ángel',
+  publisher: 'Kelsyx',
   category: 'legal technology',
   keywords: [
     'investigación jurídica',
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_CO',
     url: '/',
-    siteName: 'Lex Colombia',
+    siteName: 'Kelsyx',
     title,
     description,
   },
@@ -92,7 +93,7 @@ export const viewport: Viewport = {
   ],
 };
 
-const themeScript = `(function(){try{var t=localStorage.getItem('lex_theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';}catch(e){document.documentElement.dataset.theme='light';}})();`;
+const themeScript = `(function(){try{if(localStorage.getItem('lex_theme_optout')==='1'){var s=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=s?'dark':'light';return;}var t=localStorage.getItem('lex_theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';}catch(e){document.documentElement.dataset.theme='light';}})();`;
 
 export default function RootLayout({
   children,
@@ -102,6 +103,7 @@ export default function RootLayout({
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}
+        <CookieNotice />
       </body>
     </html>
   );

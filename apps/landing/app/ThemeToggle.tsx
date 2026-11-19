@@ -1,12 +1,14 @@
 'use client';
 
 import s from './landing.module.css';
+import { puedeGuardarTema } from './cookies';
 
 export function ThemeToggle() {
   const toggle = () => {
     const root = document.documentElement;
     const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
     root.dataset.theme = next;
+    if (!puedeGuardarTema()) return; // rechazó lo opcional: solo esta sesión
     try {
       localStorage.setItem('lex_theme', next);
     } catch {

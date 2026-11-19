@@ -10,7 +10,7 @@ services:
       TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?staging exige TOTP_ENCRYPTION_KEY}
       BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:?staging exige BILLING_WEBHOOK_SECRET}
       SMTP_URL: ${SMTP_URL:?staging exige SMTP_URL}
-      SMTP_FROM: ${SMTP_FROM:-LexAgent staging <no-reply@staging.lex.local>}
+      SMTP_FROM: ${SMTP_FROM:-Kelsyx staging <no-reply@staging.lex.local>}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://staging.lex.local}
       APP_BASE_URL: ${APP_BASE_URL:-https://staging.lex.local}
       ADMIN_MFA_REQUIRED: 'true'

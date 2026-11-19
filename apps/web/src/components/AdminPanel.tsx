@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import AccessAdmin from './AccessAdmin';
 
 function describe(e: unknown): string {
   if (e instanceof AuthHttpError) {
@@ -306,6 +307,8 @@ export default function AdminPanel(): React.ReactElement {
           </Button>
         </div>
       </section>
+
+      <AccessAdmin />
     </div>
   );
 }

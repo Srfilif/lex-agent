@@ -79,8 +79,8 @@ async function main() {
   const dialogos = JSON.parse(readFileSync('eval/conversacion.json', 'utf-8'));
   const email = `evalconv${Date.now()}@lex.co`;
   const pass = 'clave-eval-123';
-  await call('POST', '/auth/register', { email, password: pass });
-  const login = await call('POST', '/auth/login', { email, password: pass });
+  await call('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+  const login = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
   const at = login.json?.access_token;
   if (!at) throw new Error('login eval falló: ' + JSON.stringify(login.json).slice(0, 200));
 

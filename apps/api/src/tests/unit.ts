@@ -20,6 +20,14 @@ import { BadRequestException } from '@nestjs/common';
 import { DomainError } from '../modules/identity/domain/errors';
 import { parseDisplayName, parseEmail, parsePassword } from '../modules/identity/domain/value-objects';
 import { User } from '../modules/identity/domain/user';
+import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../modules/identity/domain/consent-versions';
+import {
+  formatAccessCode,
+  matchWhitelist,
+  normalizeAccessCode,
+  parseWhitelistPattern,
+} from '../modules/identity/domain/access';
+import { resolveAccessMode } from '../shared/config/access-mode';
 import { AuthSession } from '../modules/identity/domain/session';
 import { ScryptPasswordHasher } from '../modules/identity/infrastructure/crypto/scrypt-password-hasher';
 import { Hs256AccessTokens } from '../modules/identity/infrastructure/crypto/access-token.service';
@@ -303,6 +311,55 @@ eq('display colapsa', parseDisplayName('  a   b '), 'a b');
   eq('user rehabilitado', u.canAuthenticate(), true);
   u.setRole('admin', now);
   eq('user rol admin', u.role, 'admin');
+}
+
+// ---- identidad: consentimiento (019) ----
+{
+  const now = new Date('2026-11-18T00:00:00Z');
+  const sin = User.create({ id: 'u9', email: 's@x.co', displayName: 'S', passwordHash: 'h', now });
+  eq('consent ausente incompleto', sin.consentsComplete, false);
+  eq('consent versiones null', [sin.snapshot.termsVersion, sin.snapshot.privacyVersion], [null, null]);
+  const con = User.create({
+    id: 'u8', email: 'c@x.co', displayName: 'C', passwordHash: 'h', now,
+    consent: { termsVersion: '2026-11-18-v1', privacyVersion: '2026-11-18-v1' },
+  });
+  eq('consent create completo', con.consentsComplete, true);
+  eq('consent create fecha', con.snapshot.termsAcceptedAt?.toISOString(), now.toISOString());
+  sin.recordConsent('2026-11-18-v1', '2026-11-18-v1', now);
+  eq('consent record completo', sin.consentsComplete, true);
+  eq('consent record versiones', [sin.snapshot.termsVersion, sin.snapshot.privacyVersion], ['2026-11-18-v1', '2026-11-18-v1']);
+  eq('versiones vigentes', [CURRENT_TERMS_VERSION, CURRENT_PRIVACY_VERSION], ['2026-11-18-v1', '2026-11-18-v1']);
+}
+
+// ---- acceso: whitelist y códigos (020) ----
+{
+  eq('wl exacto', parseWhitelistPattern(' Ana@X.CO '), 'ana@x.co');
+  eq('wl dominio', parseWhitelistPattern('*@Empresa.CO'), '*@empresa.co');
+  eq('wl sin @', codeOf(() => parseWhitelistPattern('nodomain')), 'patron_invalido');
+  eq('wl asterisco medio', codeOf(() => parseWhitelistPattern('a*@x.co')), 'patron_invalido');
+  eq('wl dominio corto', codeOf(() => parseWhitelistPattern('*@x')), 'patron_invalido');
+  const pats = ['ana@x.co', '*@empresa.co'];
+  eq('match exacto', matchWhitelist('ana@x.co', pats), true);
+  eq('match mayúsculas', matchWhitelist('ANA@X.CO', pats), true);
+  eq('match dominio', matchWhitelist('jefe@empresa.co', pats), true);
+  eq('match ajeno', matchWhitelist('otro@y.co', pats), false);
+  eq('match subdominio no', matchWhitelist('a@sub.empresa.co', pats), false);
+  eq('match vacío', matchWhitelist('a@x.co', []), false);
+  eq('code normaliza', normalizeAccessCode('  ab12-cd34 '), 'AB12-CD34');
+  eq('code no-string', normalizeAccessCode(null), '');
+  const fmt = formatAccessCode(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]));
+  eq('code formato', /^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(fmt), true);
+  eq('code sin ambiguos', /[01IL]/.test(fmt.replace(/-/g, '')), false);
+  eq('modo default', resolveAccessMode(undefined), 'public');
+  eq('modo alias open', resolveAccessMode('open'), 'public');
+  eq('modo maintenance', resolveAccessMode('MAINTENANCE'), 'maintenance');
+  let modoRaro = '';
+  try {
+    resolveAccessMode('raro');
+  } catch (e) {
+    modoRaro = (e as Error).message;
+  }
+  eq('modo inválido', modoRaro.includes('ACCESS_MODE'), true);
 }
 
 // ---- identidad: RolesGuard ----
@@ -1359,7 +1416,7 @@ async function identidadCripto(): Promise<void> {
   eq('recovery formato', /^[A-Z2-7]{4}-[A-Z2-7]{4}$/.test(totpW.randomRecoveryCode()), true);
   eq(
     'otpauth esquema',
-    totpW.otpauthUrl(rfc, 'a@x.co', 'LexAgent').startsWith('otpauth://totp/'),
+    totpW.otpauthUrl(rfc, 'a@x.co', 'Kelsyx').startsWith('otpauth://totp/'),
     true,
   );
 
@@ -1501,6 +1558,9 @@ async function chatMemoria(): Promise<void> {
     'EMBED_BASE_URL',
     'EMBED_MODEL',
     'EMBED_API_KEY',
+    'ACCESS_MODE',
+    'ACCESS_WHITELIST',
+    'ACCESS_CODE',
   ];
   const saved = new Map<string, string | undefined>(KEYS.map((k) => [k, process.env[k]] as [string, string | undefined]));
   const restore = (): void => {
@@ -1577,6 +1637,36 @@ async function chatMemoria(): Promise<void> {
       'production',
       true,
       false,
+    ]);
+    eq('prod access default', [cfg.access.mode, cfg.access.whitelist, cfg.access.staticCode], [
+      'public',
+      [],
+      '',
+    ]);
+    restore();
+  }
+  {
+    for (const k of KEYS) delete process.env[k];
+    process.env.ACCESS_MODE = 'modo-raro';
+    let msg = '';
+    try {
+      loadAppConfig('/tmp/dir-sin-env-lex');
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    eq('access modo inválido', msg.includes('ACCESS_MODE'), true);
+    restore();
+  }
+  {
+    for (const k of KEYS) delete process.env[k];
+    process.env.ACCESS_MODE = 'open';
+    process.env.ACCESS_WHITELIST = ' Ana@X.co , *@empresa.co ,,';
+    process.env.ACCESS_CODE = 'KX-1';
+    const cfg = loadAppConfig('/tmp/dir-sin-env-lex');
+    eq('access alias+parse', [cfg.access.mode, cfg.access.whitelist, cfg.access.staticCode], [
+      'public',
+      ['ana@x.co', '*@empresa.co'],
+      'KX-1',
     ]);
     restore();
   }

@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { Brand } from './Logo';
+import { ContactForm } from './ContactForm';
+import { SectionNav } from './SectionNav';
 import { ThemeToggle } from './ThemeToggle';
 import s from './landing.module.css';
 
@@ -11,7 +14,7 @@ const appUrl = (path: string): string => `${APP_URL}${path}`;
 
 const faqs = [
   {
-    q: '¿Lex Colombia es asesoría jurídica?',
+    q: '¿Kelsyx es asesoría jurídica?',
     a: 'No. Es una herramienta de investigación y productividad. Las respuestas deben revisarse y validarse por un profesional del derecho antes de tomar cualquier decisión.',
   },
   {
@@ -42,9 +45,17 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
+      '@type': 'Person',
+      '@id': `${siteUrl}/#author`,
+      name: 'Andrés Felipe Ángel',
+      url: 'https://srfilif.dev',
+      jobTitle: 'Estudiante de Derecho y Economía · Técnico en Programación de Software',
+      sameAs: ['https://youtube.com/srfilif', 'https://github.com/srfilif'],
+    },
+    {
       '@type': 'Organization',
       '@id': `${siteUrl}/#organization`,
-      name: 'Lex Colombia',
+      name: 'Kelsyx',
       url: siteUrl,
       description:
         'Investigación jurídica asistida sobre normativa, jurisprudencia y contratos públicos de Colombia.',
@@ -54,17 +65,19 @@ const jsonLd = {
       '@type': 'WebSite',
       '@id': `${siteUrl}/#website`,
       url: siteUrl,
-      name: 'Lex Colombia',
+      name: 'Kelsyx',
       inLanguage: 'es-CO',
       publisher: { '@id': `${siteUrl}/#organization` },
     },
     {
       '@type': 'SoftwareApplication',
-      name: 'Lex Colombia',
+      name: 'Kelsyx',
       applicationCategory: 'LegalService',
       operatingSystem: 'Web',
       url: APP_URL,
       inLanguage: 'es-CO',
+      author: { '@id': `${siteUrl}/#author` },
+      license: 'https://polyformproject.org/licenses/noncommercial/1.0.0',
       description:
         'Espacio de trabajo para consultar normativa colombiana, jurisprudencia y contratos públicos con citas al fragmento que respalda cada afirmación.',
       featureList: [
@@ -98,30 +111,9 @@ export default function LandingPage() {
 
       <header className={s.header}>
         <div className={s.headerInner}>
-          <Link href="/" className={s.brand} aria-label="Lex Colombia, inicio">
-            <span className={s.mark} aria-hidden="true">
-              L
-            </span>
-            <span className={s.wordmark}>
-              <strong>Lex Colombia</strong>
-              <span>Investigación jurídica</span>
-            </span>
-          </Link>
+          <Brand />
 
-          <nav className={s.nav} aria-label="Secciones de la página">
-            <a className={s.navLink} href="#producto">
-              Producto
-            </a>
-            <a className={s.navLink} href="#trazabilidad">
-              Trazabilidad
-            </a>
-            <a className={s.navLink} href="#cobertura">
-              Cobertura
-            </a>
-            <a className={s.navLink} href="#seguridad">
-              Seguridad
-            </a>
-          </nav>
+          <SectionNav />
 
           <div className={s.headerActions}>
             <ThemeToggle />
@@ -423,7 +415,7 @@ export default function LandingPage() {
                 Un corpus con límites explícitos.
               </h2>
               <p>
-                Lex Colombia trabaja sobre el corpus que tenga cargado cada instalación. En el
+                Kelsyx trabaja sobre el corpus que tenga cargado cada instalación. En el
                 despliegue actual: normativa de contratación estatal y constitucional,
                 jurisprudencia relacionada y datos de SECOP II. No es una base universal de todo
                 el ordenamiento.
@@ -590,6 +582,147 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className={`${s.section} ${s.about}`} id="acerca" aria-labelledby="acerca-title">
+          <div className={s.aboutGrid}>
+            <div className={s.aboutCopy}>
+              <p className={s.kicker}>08 / Acerca de</p>
+              <h2 id="acerca-title" className={s.display2}>
+                Derecho, economía y código en el mismo expediente.
+              </h2>
+              <p className={s.aboutLead}>
+                Kelsyx es un proyecto creado por <strong>Andrés Felipe Ángel</strong>, estudiante de
+                Derecho y Economía de la Universidad del Valle y Técnico en Programación de
+                Software.
+              </p>
+              <p>
+                El proyecto nace de una idea sencilla: la tecnología jurídica debe mostrar la
+                fuente, no esconderla. Esa convicción viene de estudiar derecho y economía, y de
+                escribir software para convertirla en una herramienta concreta.
+              </p>
+              <ul className={s.aboutLinks} aria-label="Enlaces de Andrés Felipe Ángel">
+                <li>
+                  <a className={s.aboutLink} href="https://srfilif.dev" target="_blank" rel="noreferrer">
+                    srfilif.dev <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a
+                    className={s.aboutLink}
+                    href="https://youtube.com/srfilif"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    youtube.com/srfilif <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a
+                    className={s.aboutLink}
+                    href="https://github.com/srfilif"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    github.com/srfilif <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div className={s.aboutSide}>
+              <div className={s.profileCard}>
+                <p className={s.cardKicker}>Ficha del autor</p>
+                <dl className={s.profileList}>
+                  <div className={s.profileRow}>
+                    <dt>Nombre</dt>
+                    <dd>Andrés Felipe Ángel</dd>
+                  </div>
+                  <div className={s.profileRow}>
+                    <dt>Formación</dt>
+                    <dd>Derecho y Economía · Universidad del Valle</dd>
+                  </div>
+                  <div className={s.profileRow}>
+                    <dt>Perfil técnico</dt>
+                    <dd>Técnico en Programación de Software</dd>
+                  </div>
+                  <div className={s.profileRow}>
+                    <dt>Proyecto</dt>
+                    <dd>Kelsyx · LegalTech</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className={s.licenseCard}>
+                <p className={s.cardKicker}>Licencia</p>
+                <h3 className={s.licenseName}>PolyForm Noncommercial 1.0.0</h3>
+                <p>
+                  Libre para el mundo en usos personales, académicos, de investigación y no
+                  comerciales. El uso comercial requiere una licencia separada.
+                </p>
+                <p className={s.licenseMeta}>
+                  Source-available · No es Open Source certificado por OSI
+                </p>
+                <Link className={s.licenseLink} href="/licencia">
+                  Leer la licencia <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className={`${s.section} ${s.contact}`}
+          id="contacto"
+          aria-labelledby="contacto-title"
+        >
+          <div className={s.contactGrid}>
+            <div>
+              <p className={s.kicker}>09 / Contacto</p>
+              <h2 id="contacto-title" className={s.display2}>
+                Hablemos del proyecto.
+              </h2>
+              <p className={s.contactLead}>
+                Para dudas, colaboraciones, licencias comerciales o cualquier conversación sobre
+                derecho y tecnología, escríbeme directamente.
+              </p>
+              <div className={s.contactChannels}>
+                <a className={s.contactChannel} href="mailto:srfilif@gmail.com">
+                  <span>Correo</span>
+                  <span>srfilif@gmail.com ↗</span>
+                </a>
+                <a
+                  className={s.contactChannel}
+                  href="https://srfilif.dev"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>Sitio web</span>
+                  <span>srfilif.dev ↗</span>
+                </a>
+                <a
+                  className={s.contactChannel}
+                  href="https://github.com/srfilif"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>GitHub</span>
+                  <span>github.com/srfilif ↗</span>
+                </a>
+                <a
+                  className={s.contactChannel}
+                  href="https://youtube.com/srfilif"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>YouTube</span>
+                  <span>youtube.com/srfilif ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <ContactForm />
+          </div>
+        </section>
+
         <section className={s.cta} aria-labelledby="cta-title">
           <span className={s.ctaMark} aria-hidden="true">
             L
@@ -607,7 +740,7 @@ export default function LandingPage() {
             </div>
             <div className={s.ctaActions}>
               <a className={s.ctaPrimary} href={APP_URL}>
-                Entrar a Lex Colombia <span aria-hidden="true">↗</span>
+                Entrar a Kelsyx <span aria-hidden="true">↗</span>
               </a>
               <Link className={s.ctaGhost} href="/aviso-legal">
                 Leer el aviso legal
@@ -623,15 +756,7 @@ export default function LandingPage() {
       <footer className={s.footer}>
         <div className={s.footerTop}>
           <div className={s.footerBrand}>
-            <Link href="/" className={s.brand} aria-label="Lex Colombia, inicio">
-              <span className={s.mark} aria-hidden="true">
-                L
-              </span>
-              <span className={s.wordmark}>
-                <strong>Lex Colombia</strong>
-                <span>Investigación jurídica</span>
-              </span>
-            </Link>
+            <Brand />
             <p className={s.footerTagline}>
               Las fuentes primero. La interpretación, después.
             </p>
@@ -666,19 +791,54 @@ export default function LandingPage() {
               <Link className={s.footerLink} href="/aviso-legal">
                 Aviso legal
               </Link>
+              <Link className={s.footerLink} href="/terminos">
+                Términos
+              </Link>
+              <Link className={s.footerLink} href="/privacidad">
+                Privacidad
+              </Link>
+              <Link className={s.footerLink} href="/cookies">
+                Cookies
+              </Link>
+              <Link className={s.footerLink} href="/licencia">
+                Licencia
+              </Link>
               <a className={s.footerLink} href="#trazabilidad">
                 Cómo citamos
               </a>
-              <a className={s.footerLink} href="#seguridad">
-                Seguridad
+            </div>
+            <div className={s.footerCol}>
+              <h3>Proyecto</h3>
+              <a className={s.footerLink} href="#acerca">
+                Acerca de
+              </a><a className={s.footerLink} href="#contacto">
+                Contacto
+              </a>
+              <a className={s.footerLink} href="https://github.com/srfilif/lex-agent"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Código fuente
+              </a>
+              <a className={s.footerLink} href="/actualizaciones">
+                Actualizaciones
+              </a>
+              <a
+                className={s.footerLink}
+                href="https://srfilif.dev"
+                target="_blank"
+                rel="noreferrer"
+              >
+                srfilif.dev
               </a>
             </div>
           </div>
         </div>
 
         <div className={s.footerBottom}>
-          <span>© {year} Lex Colombia · Colombia</span>
-          <span>Investigación jurídica con fuentes verificables</span>
+          <span>© {year} Kelsyx · Colombia</span>
+          <span>Hecho por Andrés Felipe Ángel · srfilif.dev</span>
+          <span>PolyForm Noncommercial 1.0.0</span>
           <span>Vigencia normativa no garantizada</span>
         </div>
       </footer>

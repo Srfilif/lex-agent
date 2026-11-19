@@ -1,4 +1,4 @@
--- Lex Colombia AI — esquema base (Día 1). Fuente de verdad del modelo de datos.
+-- Kelsyx AI — esquema base (Día 1). Fuente de verdad del modelo de datos.
 -- Ver docs/arquitectura/RAG_DESIGN.md (metadatos, fragmentación) y docs/arquitectura/DATABASE_SCHEMA.md (resumen).
 
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -111,6 +111,10 @@ CREATE TABLE IF NOT EXISTS users (
                   CHECK (status IN ('active', 'disabled', 'deleted')),
   role            TEXT NOT NULL DEFAULT 'user'
                   CHECK (role IN ('user', 'admin')),
+  terms_version       TEXT NULL, -- espejo de migrations/019_consents.sql
+  terms_accepted_at   TIMESTAMPTZ NULL,
+  privacy_version     TEXT NULL,
+  privacy_accepted_at TIMESTAMPTZ NULL,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -416,3 +420,24 @@ ALTER TABLE project_files ADD COLUMN IF NOT EXISTS sospechoso BOOLEAN NOT NULL D
 
 -- Temas por conversación (espejo de db/migrations/016_conv_topics.sql).
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS topics TEXT[] NOT NULL DEFAULT '{}';
+
+-- Control de acceso (espejo de db/migrations/020_access.sql).
+CREATE TABLE IF NOT EXISTS access_whitelist (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pattern    TEXT NOT NULL UNIQUE,
+  label      TEXT NULL,
+  created_by UUID NULL REFERENCES users (id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS access_codes (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code_hash   TEXT NOT NULL UNIQUE,
+  label       TEXT NULL,
+  max_uses    INTEGER NOT NULL DEFAULT 1 CHECK (max_uses >= 1),
+  used_count  INTEGER NOT NULL DEFAULT 0 CHECK (used_count >= 0),
+  expires_at  TIMESTAMPTZ NULL,
+  revoked_at  TIMESTAMPTZ NULL,
+  created_by  UUID NULL REFERENCES users (id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -14,7 +14,7 @@ const check = (n, ok, x = '') => {
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
 const E = `cta-${Date.now()}@lex.co`;
-await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-cta-123' }) }));
+await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-cta-123', terms_accepted: true, privacy_accepted: true }) }));
 await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' });
 await page.getByPlaceholder('tucorreo@ejemplo.co').fill(E);
 await page.getByPlaceholder('Mínimo 8 caracteres').fill('clave-cta-123');

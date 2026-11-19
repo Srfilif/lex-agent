@@ -7,7 +7,7 @@ const browser = await chromium.launch({ executablePath: EDGE, headless: true, ar
 {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   const E = `vis-${Date.now()}@lex.co`;
-  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123' }) }));
+  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123', terms_accepted: true, privacy_accepted: true }) }));
   await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' });
   await page.getByPlaceholder('tucorreo@ejemplo.co').fill(E);
   await page.getByPlaceholder('Mínimo 8 caracteres').fill('clave-vis-123');
@@ -26,7 +26,7 @@ const browser = await chromium.launch({ executablePath: EDGE, headless: true, ar
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   const E = `vism-${Date.now()}@lex.co`;
-  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123' }) }));
+  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123', terms_accepted: true, privacy_accepted: true }) }));
   await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' });
   await page.getByPlaceholder('tucorreo@ejemplo.co').fill(E);
   await page.getByPlaceholder('Mínimo 8 caracteres').fill('clave-vis-123');
@@ -42,7 +42,7 @@ const browser = await chromium.launch({ executablePath: EDGE, headless: true, ar
 {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   const E = `visd-${Date.now()}@lex.co`;
-  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123' }) }));
+  await (await fetch('http://localhost:3000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123', terms_accepted: true, privacy_accepted: true }) }));
   const l = await (await fetch('http://localhost:3000/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: E, password: 'clave-vis-123' }) })).json();
   await fetch('http://localhost:3000/account/preferences', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${l.access_token}` }, body: JSON.stringify({ theme: 'dark' }) });
   await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' });

@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Brand } from '../Logo';
 import s from '../landing.module.css';
 
 export const metadata: Metadata = {
   title: 'Aviso legal',
   description:
-    'Condiciones de uso, límites del servicio y tratamiento de fuentes de Lex Colombia, plataforma de investigación jurídica.',
+    'Condiciones de uso, límites del servicio y tratamiento de fuentes de Kelsyx, plataforma de investigación jurídica.',
   alternates: {
     canonical: '/aviso-legal',
   },
@@ -19,15 +20,7 @@ export default function AvisoLegalPage() {
   return (
     <main className={s.legalPage} id="contenido">
       <header className={s.legalHeader}>
-        <Link href="/" className={s.brand} aria-label="Lex Colombia, inicio">
-          <span className={s.mark} aria-hidden="true">
-            L
-          </span>
-          <span className={s.wordmark}>
-            <strong>Lex Colombia</strong>
-            <span>Investigación jurídica</span>
-          </span>
-        </Link>
+        <Brand />
         <h1 className={s.legalTitle}>Aviso legal y límites del servicio</h1>
         <p className={s.legalMeta}>Última actualización · noviembre de 2026</p>
       </header>
@@ -36,7 +29,7 @@ export default function AvisoLegalPage() {
         <section className={s.legalSection}>
           <h2>Naturaleza del servicio</h2>
           <p>
-            Lex Colombia es una herramienta de investigación y productividad jurídica. No presta
+            Kelsyx es una herramienta de investigación y productividad jurídica. No presta
             asesoría legal, no representa a ninguna parte y no sustituye el criterio de un
             profesional del derecho. Toda decisión que se derive del uso de la plataforma es
             responsabilidad de quien la adopta.
@@ -79,9 +72,11 @@ export default function AvisoLegalPage() {
             dos pasos, exportar la información de la cuenta y solicitar su eliminación.
           </p>
           <p>
-            El tratamiento concreto de los datos depende de la organización que administra la
-            instalación y de la configuración de despliegue. Consulta sus políticas internas antes
-            de cargar información confidencial.
+            El detalle del tratamiento está en la{' '}
+            <Link href="/privacidad">Política de Datos</Link> y las condiciones del servicio en
+            los <Link href="/terminos">Términos</Link>. En despliegues administrados por otra
+            organización, consulta además sus políticas internas antes de cargar información
+            confidencial.
           </p>
         </section>
 
@@ -96,11 +91,29 @@ export default function AvisoLegalPage() {
         </section>
 
         <section className={s.legalSection}>
+          <h2>Licencia</h2>
+          <p>
+            El código de Kelsyx se distribuye bajo la PolyForm Noncommercial License 1.0.0.
+            Se permite el uso personal, académico, de investigación y por organizaciones no
+            comerciales. El uso comercial no está concedido y requiere una licencia separada del
+            titular.
+          </p>
+          <p>
+            El proyecto es source-available, no software Open Source certificado por OSI. Consulta
+            las condiciones completas en la <Link href="/licencia">página de licencia</Link>.
+          </p>
+        </section>
+
+        <section className={s.legalSection}>
           <h2>Contacto</h2>
           <p>
-            Para asuntos de soporte, privacidad o uso de la plataforma, utiliza los canales de la
-            organización que administra tu instalación. Esta página no publica datos de contacto
-            genéricos para evitar dirigir solicitudes a un destinatario incorrecto.
+            Para asuntos de soporte, privacidad, colaboración o licencias comerciales, escribe a{' '}
+            <a href="mailto:srfilif@gmail.com">srfilif@gmail.com</a> o visita{' '}
+            <a href="https://srfilif.dev" target="_blank" rel="noreferrer">
+              srfilif.dev
+            </a>
+            . También puedes usar la <Link href="/#contacto">sección de contacto</Link> de la
+            página principal.
           </p>
         </section>
 

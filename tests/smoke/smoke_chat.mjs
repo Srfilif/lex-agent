@@ -75,8 +75,8 @@ async function stream(path, body, token) {
 
 const email = `chat${Date.now()}@lex.co`;
 const pass = 'clave-chat-123';
-await call('POST', '/auth/register', { email, password: pass });
-const login = await call('POST', '/auth/login', { email, password: pass });
+await call('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+const login = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const at = login.json.access_token;
 check('login humo chat', !!at);
 

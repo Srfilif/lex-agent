@@ -2,7 +2,7 @@
 // Además exige sesión viva en DB (revocación efectiva antes de los 15 min).
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { ACCESS_TOKENS, AccessTokens } from '../../application/ports';
-import { noAutenticado } from '../../application/errors';
+import { mantenimiento, noAutenticado } from '../../application/errors';
 import { SESSION_REPOSITORY, SessionRepository } from '../../domain/repositories';
 import { UserRole } from '../../domain/user';
 import { AppConfig, CONFIG } from '../../../../shared/config';
@@ -48,6 +48,10 @@ export class AuthGuard implements CanActivate {
       throw noAutenticado();
     }
     req.user = { id: claims.sub, sessionId: claims.sid, role: claims.role, mfa: s.mfaOk };
+    // Mantenimiento: bloqueo total salvo admins (incluye sesiones activas).
+    if (this.cfg.access.mode === 'maintenance' && req.user.role !== 'admin') {
+      throw mantenimiento();
+    }
     return true;
   }
 }

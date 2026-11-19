@@ -61,8 +61,8 @@ const email = `totp${Date.now()}@lex.co`;
 const pass = 'clave-totp-1';
 
 // 1. registro + login directo (sin 2FA)
-await call('POST', '/auth/register', { email, password: pass });
-const l1 = await call('POST', '/auth/login', { email, password: pass });
+await call('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+const l1 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 check('login directo sin 2FA', l1.status === 201 && !!l1.json.access_token, l1.status);
 const at1 = l1.json.access_token;
 
@@ -90,7 +90,7 @@ const st1 = await call('GET', '/account/security/totp/status', null, at1);
 check('status active + 10 left', st1.json?.status === 'active' && st1.json?.recovery_codes_left === 10, JSON.stringify(st1.json));
 
 // 3. login exige MFA; pre-token no sirve como sesión
-const l2 = await call('POST', '/auth/login', { email, password: pass });
+const l2 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 check('login pide mfa', l2.json?.mfa_required === true && !!l2.json?.mfa_token, JSON.stringify(l2.json));
 const abuse = await call('GET', '/account/me', null, l2.json.mfa_token);
 check('mfa_token no es sesión', abuse.status === 401, abuse.status);
@@ -101,15 +101,15 @@ const mfa = await call('POST', '/auth/mfa/verify', { mfa_token: l2.json.mfa_toke
 check('mfa totp ok', mfa.status === 201 && !!mfa.json.access_token, mfa.status);
 
 // 4. replay del mismo código TOTP debe fallar (400 replay o 401 ventana movida)
-const l3 = await call('POST', '/auth/login', { email, password: pass });
+const l3 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const replay = await call('POST', '/auth/mfa/verify', { mfa_token: l3.json.mfa_token, code: code3 });
 check('mfa replay rechazado', replay.status !== 201, replay.status);
 
 // 5. login por recovery code (un uso)
-const l4 = await call('POST', '/auth/login', { email, password: pass });
+const l4 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const rec = await call('POST', '/auth/mfa/verify', { mfa_token: l4.json.mfa_token, code: codes[0] });
 check('mfa recovery ok + 9 left', rec.status === 201 && rec.json?.recovery_codes_left === 9, rec.status);
-const l5 = await call('POST', '/auth/login', { email, password: pass });
+const l5 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const rec2 = await call('POST', '/auth/mfa/verify', { mfa_token: l5.json.mfa_token, code: codes[0] });
 check('recovery un solo uso', rec2.status === 401, rec2.status);
 
@@ -119,7 +119,7 @@ const disBad = await call('POST', '/account/security/totp/disable', { password: 
 check('disable rechaza pass mala', disBad.status === 401, disBad.status);
 const dis = await call('POST', '/account/security/totp/disable', { password: pass, code: codes[1] }, at3);
 check('disable ok', dis.status === 201, dis.status);
-const l6 = await call('POST', '/auth/login', { email, password: pass });
+const l6 = await call('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 check('login directo tras disable', l6.status === 201 && !l6.json?.mfa_required, l6.status);
 
 if (fails) {

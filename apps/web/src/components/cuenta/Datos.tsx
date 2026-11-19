@@ -6,6 +6,7 @@ import {
   solicitarBorrado,
   type Me,
 } from '../../cuenta';
+import { reabrirAvisoCookies, URL_COOKIES, URL_PRIVACIDAD, URL_TERMINOS } from '../../legal';
 import Bloque, { describeError } from './comun';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
@@ -79,8 +80,43 @@ export default function Datos({ me, onSesionCerrada }: { me: Me; onSesionCerrada
     }
   }
 
+  function fechaCorta(iso: string | null): string {
+    if (!iso) return 'pendiente';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('es-CO');
+  }
+
   return (
     <>
+      <Bloque titulo="Mis aceptaciones legales">
+        <p className="meta">
+          Términos: {me.terms_version ?? 'pendiente'} ({fechaCorta(me.terms_accepted_at)}) ·{' '}
+          <a href={URL_TERMINOS} target="_blank" rel="noreferrer">
+            Ver vigentes
+          </a>
+        </p>
+        <p className="meta">
+          Datos: {me.privacy_version ?? 'pendiente'} ({fechaCorta(me.privacy_accepted_at)}) ·{' '}
+          <a href={URL_PRIVACIDAD} target="_blank" rel="noreferrer">
+            Ver vigentes
+          </a>
+        </p>
+        <p className="meta">
+          <a href={URL_COOKIES} target="_blank" rel="noreferrer">
+            Política de cookies
+          </a>{' '}
+          ·{' '}
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={() => reabrirAvisoCookies()}
+          >
+            Configurar cookies
+          </Button>
+        </p>
+      </Bloque>
       <Bloque titulo="Exportar mis datos">
         <p className="meta">Descarga una copia de tu cuenta en JSON (perfil, preferencias e historial disponible).</p>
         {msg && (

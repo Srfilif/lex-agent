@@ -40,7 +40,7 @@ import {
 } from './ports';
 import { publicUser } from './profile';
 
-const ISSUER = 'LexAgent';
+const ISSUER = 'Kelsyx';
 const RECOVERY_COUNT = 10;
 
 @Injectable()

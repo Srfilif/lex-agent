@@ -1,4 +1,4 @@
-# LexAgent — Chat jurídico colombiano con RAG
+# Kelsyx — Chat jurídico colombiano con RAG
 
 Asistente conversacional sobre normativa colombiana (contratación estatal y
 constitución): chat multi-turno con streaming, proyectos, archivos por
@@ -143,9 +143,28 @@ Detalle en [tests/README.md](tests/README.md).
 Nunca commitees `.env`, `backups/`, `data/` ni dumps (ver [.gitignore](.gitignore)).
 Para reportar vulnerabilidades ver [SECURITY.md](SECURITY.md).
 
+## Documentos legales
+
+- Términos del servicio: [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)
+- Política de tratamiento de datos: [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+- Manual interno de datos: [DATA_PROCESSING_POLICY.md](DATA_PROCESSING_POLICY.md)
+- Cookies y almacenamiento: [COOKIE_POLICY.md](COOKIE_POLICY.md)
+- Uso aceptable: [ACCEPTABLE_USE_POLICY.md](ACCEPTABLE_USE_POLICY.md)
+- Seguridad: [SECURITY.md](SECURITY.md)
+- Avisos de terceros: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- Informe de auditoría: [LEGAL_AUDIT_REPORT.md](LEGAL_AUDIT_REPORT.md)
+
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE).
+PolyForm Noncommercial 1.0.0 — ver [LICENSE](LICENSE). Cambio desde MIT
+documentado en [LICENSE_CHANGE.md](LICENSE_CHANGE.md).
+
+El proyecto es **source-available** y libre para usos personales, académicos, de
+investigación y no comerciales. El uso comercial —productos, SaaS o servicios que
+generen ingresos— requiere una licencia separada. No es Open Source certificado
+por OSI.
+
+Desarrollador original: **Andrés Felipe Ángel** — https://srfilif.dev
 
 ---
 

@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Moon, Scale, ShieldCheck, Sparkles, Sun } from 'lucide-react';
-import { clearSession, getEmail, isLoggedIn, logout } from './auth';
+import { clearSession, fetchAccessMode, getEmail, isLoggedIn, logout } from './auth';
 import {
+  fetchConsentimientos,
   fetchMe,
   fetchPreferencias,
   patchPreferencias,
+  type ConsentState,
   type Me,
   type Preferencias,
 } from './cuenta';
 import AuthView from './components/AuthView';
 import AppShell, { type Vista } from './components/AppShell';
 import Biblioteca from './components/Biblioteca';
+import { Brand } from './components/Logo';
 import ChatShell from './components/ChatShell';
+import ConsentGate from './components/ConsentGate';
+import CookieNotice from './components/CookieNotice';
 import CorpusFooter from './components/CorpusFooter';
 import Cuenta, { type SubVista } from './components/Cuenta';
 import Dashboard from './components/Dashboard';
@@ -20,6 +25,7 @@ import SharedView, { leerTokenCompartido } from './components/SharedView';
 import Storage from './components/Storage';
 import { Button } from './components/ui/button';
 import { aplicarTema } from './shared/tema';
+import { puedeGuardarTema, URL_PRIVACIDAD, URL_TERMINOS } from './legal';
 
 // Mini-router con History API (sin dependencias): /login, /register,
 // /forgot-password, /reset-password, /inicio, /chat, /investigar,
@@ -134,11 +140,28 @@ export default function App(): React.ReactElement {
   const [cuentaTab, setCuentaTab] = useState<SubVista>('perfil');
 
   const [temaLocal, setTemaLocal] = useState<'light' | 'dark' | 'system'>(() => {
+    if (!puedeGuardarTema()) return 'system'; // rechazó lo opcional: sin persistencia
     const guardado = localStorage.getItem('lex_theme');
     return guardado === 'light' || guardado === 'dark' || guardado === 'system'
       ? guardado
       : 'system';
   });
+  const [consentimientos, setConsentimientos] = useState<ConsentState | null>(null);
+  const [accesoAbierto, setAccesoAbierto] = useState(true);
+
+  // Entrada de invitado solo en modo abierto (el servidor decide; esto es UI).
+  useEffect(() => {
+    if (authed) return;
+    let vivo = true;
+    fetchAccessMode()
+      .then((a) => {
+        if (vivo) setAccesoAbierto(a.mode === 'public');
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [authed]);
   const [oscuroSistema, setOscuroSistema] = useState(
     () => window.matchMedia('(prefers-color-scheme: dark)').matches,
   );
@@ -184,7 +207,7 @@ export default function App(): React.ReactElement {
 
   useEffect(() => {
     aplicarTema(temaLocal);
-    localStorage.setItem('lex_theme', temaLocal);
+    if (puedeGuardarTema()) localStorage.setItem('lex_theme', temaLocal);
   }, [temaLocal]);
 
   useEffect(() => {
@@ -192,6 +215,7 @@ export default function App(): React.ReactElement {
       clearSession();
       setAuthed(false);
       setMe(null);
+      setConsentimientos(null);
     };
     window.addEventListener('lex:session-expired', onExpired);
     return () => window.removeEventListener('lex:session-expired', onExpired);
@@ -267,6 +291,7 @@ export default function App(): React.ReactElement {
     setEmail(null);
     setMe(null);
     setPrefs(null);
+    setConsentimientos(null);
     setInvitado(false);
     navegar('/login', true);
   }
@@ -275,8 +300,27 @@ export default function App(): React.ReactElement {
     setAuthed(false);
     setEmail(null);
     setMe(null);
+    setConsentimientos(null);
     navegar('/login', true);
   }
+
+  const faltaConsentimiento =
+    me !== null && (me.terms_version === null || me.privacy_version === null);
+
+  // Cuentas previas a la migración 019: cargar estado para la puerta.
+  useEffect(() => {
+    if (!authed || !faltaConsentimiento || consentimientos) return;
+    let vivo = true;
+    fetchConsentimientos()
+      .then((c) => {
+        if (vivo) setConsentimientos(c);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, faltaConsentimiento]);
 
   function preguntar(texto: string): void {
     setChatTarget(null);
@@ -313,13 +357,7 @@ export default function App(): React.ReactElement {
       <div className="public-shell">
         <header className="public-header">
           <div className="brand" style={{ padding: 0 }}>
-            <span className="brand-mark" aria-hidden="true">
-              L
-            </span>
-            <span className="brand-text">
-              <span className="brand-name">Lex Colombia</span>
-              <span className="brand-sub">Legal Intelligence</span>
-            </span>
+            <Brand />
           </div>
           <span className="chip">Conversación compartida</span>
         </header>
@@ -327,9 +365,17 @@ export default function App(): React.ReactElement {
         <footer>
           <p>
             Vigencia normativa no verificada · Verifique las fuentes antes de actuar. No es
-            asesoría jurídica.
+            asesoría jurídica.{' '}
+            <a href={URL_TERMINOS} target="_blank" rel="noreferrer">
+              Términos
+            </a>{' '}
+            ·{' '}
+            <a href={URL_PRIVACIDAD} target="_blank" rel="noreferrer">
+              Privacidad
+            </a>
           </p>
         </footer>
+        <CookieNotice />
       </div>
     );
   }
@@ -339,13 +385,7 @@ export default function App(): React.ReactElement {
       <div className="auth-page">
         <aside className="auth-aside" aria-hidden="true">
           <div className="brand">
-            <span className="brand-mark" aria-hidden="true">
-              L
-            </span>
-            <span className="brand-text">
-              <span className="brand-name">Lex Colombia</span>
-              <span className="brand-sub">Legal Intelligence</span>
-            </span>
+            <Brand />
           </div>
           <div>
             <span className="eyebrow" style={{ color: '#d4b378' }}>
@@ -386,13 +426,7 @@ export default function App(): React.ReactElement {
             {temaEfectivo === 'dark' ? <Sun /> : <Moon />}
           </Button>
           <div className="auth-mobile-brand">
-            <span className="brand-mark" aria-hidden="true">
-              L
-            </span>
-            <span className="brand-text">
-              <span className="brand-name">Lex Colombia</span>
-              <span className="brand-sub">Legal Intelligence</span>
-            </span>
+            <Brand />
           </div>
           <AuthView
             modo={authRuta?.modo ?? 'login'}
@@ -404,25 +438,35 @@ export default function App(): React.ReactElement {
               navegar(authRuta?.next ?? '/inicio', true);
             }}
           />
-          <p className="guest-link">
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              onClick={() => {
-                setInvitado(true);
-                navegar('/investigar');
-              }}
-            >
-              Continuar sin cuenta (solo Investigación)
-            </Button>
-          </p>
+          {accesoAbierto && (
+            <p className="guest-link">
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => {
+                  setInvitado(true);
+                  navegar('/investigar');
+                }}
+              >
+                Continuar sin cuenta (solo Investigación)
+              </Button>
+            </p>
+          )}
           <p className="auth-legal">
             Al continuar aceptas que las respuestas deben validarse con las fuentes oficiales. La
-            vigencia normativa no está garantizada.
+            vigencia normativa no está garantizada.{' '}
+            <a href={URL_TERMINOS} target="_blank" rel="noreferrer">
+              Términos
+            </a>{' '}
+            ·{' '}
+            <a href={URL_PRIVACIDAD} target="_blank" rel="noreferrer">
+              Privacidad
+            </a>
           </p>
         </section>
+        <CookieNotice />
       </div>
     );
   }
@@ -434,13 +478,7 @@ export default function App(): React.ReactElement {
           <header className="topbar">
             <div className="topbar-left">
               <div className="brand" style={{ padding: 0 }}>
-                <span className="brand-mark" aria-hidden="true">
-                  L
-                </span>
-                <span className="brand-text">
-                  <span className="brand-name">Lex Colombia</span>
-                  <span className="brand-sub">Legal Intelligence</span>
-                </span>
+                <Brand />
               </div>
             </div>
             <div className="topbar-right">
@@ -462,6 +500,34 @@ export default function App(): React.ReactElement {
           </main>
           <CorpusFooter />
         </div>
+        <CookieNotice />
+      </div>
+    );
+  }
+
+  if (faltaConsentimiento) {
+    return (
+      <div className="app" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
+        {consentimientos ? (
+          <ConsentGate
+            estado={consentimientos}
+            onAceptado={() => {
+              setConsentimientos(null);
+              fetchMe()
+                .then((m) => {
+                  setMe(m);
+                  setEmail(m.email);
+                })
+                .catch(() => undefined);
+            }}
+            onSalir={() => void salir()}
+          />
+        ) : (
+          <div className="page">
+            <div className="skeleton" style={{ height: 120 }} />
+          </div>
+        )}
+        <CookieNotice />
       </div>
     );
   }
@@ -531,6 +597,7 @@ export default function App(): React.ReactElement {
             </div>
           ))}
       </AppShell>
+      <CookieNotice />
     </>
   );
 }

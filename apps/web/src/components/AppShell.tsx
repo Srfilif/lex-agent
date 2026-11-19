@@ -51,6 +51,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from './ui/command';
+import { Brand } from './Logo';
 
 export type Vista =
   | 'inicio'
@@ -207,13 +208,7 @@ export default function AppShell({
       )}
       <aside className={`rail${railOpen ? ' abierto' : ''}`} aria-label="Navegación principal">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            L
-          </span>
-          <span className="brand-text">
-            <span className="brand-name">Lex Colombia</span>
-            <span className="brand-sub">Legal Intelligence</span>
-          </span>
+          <Brand />
           <Button
             type="button"
             variant="ghost"
@@ -403,7 +398,7 @@ export default function AppShell({
               <Menu />
             </Button>
             <div className="crumbs" aria-label="Ubicación">
-              <span className="max-[520px]:hidden">Lex Colombia</span>
+              <span className="max-[520px]:hidden">Kelsyx</span>
               <ChevronRight size={13} className="max-[520px]:hidden" />
               <strong>{TITULOS[vista]}</strong>
             </div>

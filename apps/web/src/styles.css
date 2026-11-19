@@ -1,5 +1,5 @@
 /* =========================================================================
-   Lex Colombia AI — Design system
+   Kelsyx — Design system
    Tokens únicos → componentes. Sin valores mágicos dispersos.
    ========================================================================= */
 
@@ -525,10 +525,11 @@ label {
   border-radius: 8px;
   background: var(--brand-gradient);
   color: #fff;
-  font-family: var(--font-serif);
-  font-size: 1.05rem;
-  font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.brand-mark svg {
+  display: block;
 }
 .brand .rail-toggle {
   margin-left: auto;
@@ -3042,6 +3043,36 @@ td.objeto {
   margin-top: var(--space-4);
   text-align: center;
   font-size: var(--text-xs);
+}
+
+/* ——— Aviso de cookies (fijo, no bloqueante) ——— */
+.cookie-notice {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: var(--space-4);
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: min(46rem, calc(100vw - 2rem));
+  padding: var(--space-3) var(--space-4);
+  background: var(--card);
+  color: var(--card-foreground, var(--foreground));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+}
+.cookie-notice-text {
+  flex: 1 1 22rem;
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.cookie-notice-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
 }
 
 /* ——— Modal / command palette ——— */

@@ -27,8 +27,8 @@ async function upload(pid, name, content, type, t) {
 
 const email = `files${Date.now()}@lex.co`;
 const pass = 'clave-files-123';
-await j('POST', '/auth/register', { email, password: pass });
-const l = await j('POST', '/auth/login', { email, password: pass });
+await j('POST', '/auth/register', { email, password: pass, terms_accepted: true, privacy_accepted: true });
+const l = await j('POST', '/auth/login', { email, password: pass, terms_accepted: true, privacy_accepted: true });
 const at = l.json?.access_token;
 check('login humo files', !!at, l.status);
 const pr = await j('POST', '/chat/projects', { name: 'Proyecto Files' }, at);
@@ -69,8 +69,8 @@ check('storage anónimo 401', anonAll.status === 401, anonAll.status);
 const anonDl = await fetch(`${API}/chat/files/${fid}/download`);
 check('descarga anónima 401', anonDl.status === 401, anonDl.status);
 const email2 = `files2${Date.now()}@lex.co`;
-await j('POST', '/auth/register', { email: email2, password: pass });
-const l2 = await j('POST', '/auth/login', { email: email2, password: pass });
+await j('POST', '/auth/register', { email: email2, password: pass, terms_accepted: true, privacy_accepted: true });
+const l2 = await j('POST', '/auth/login', { email: email2, password: pass, terms_accepted: true, privacy_accepted: true });
 const at2 = l2.json?.access_token;
 const all2 = await j('GET', '/chat/files', null, at2);
 check('storage ajeno vacío', all2.status === 200 && (all2.json?.files ?? []).length === 0, all2.status);
